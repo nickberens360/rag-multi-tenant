@@ -5,6 +5,7 @@ dist/
 .BAK/
 *.bak
 *.BAK
+*.backup-*
 *.zip
 claude-exports/
 podman-commands.sh
@@ -59,6 +60,10 @@ env/
 # environment variables
 .env
 .env.production
+.env.railway
+.env.backup-*
+.env.migration
+.env.test
 
 # macOS-specific files
 .DS_Store
