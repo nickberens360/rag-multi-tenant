@@ -1,0 +1,99 @@
+---
+import Head from '../components/Head.astro';
+import SiteHeader from '../components/SiteHeader.vue';
+import SiteFooter from '../components/SiteFooter.vue';
+import BlogMenuLoader from '../components/BlogMenuLoader.vue';
+import "@fontsource-variable/doto";
+import "@fontsource-variable/jetbrains-mono";
+import {getGitBranch, getLatestCommitHash, getLatestCommitMessage, getGitHubRepoUrl} from '../utils/gitInfo.js';
+import '@fortawesome/fontawesome-svg-core/styles.css';
+import { getCollection } from 'astro:content';
+
+export interface Props {
+    title?: string;
+    description?: string;
+    favicon?: string;
+    headerVariant?: string;
+    hideFooter?: boolean;
+    hideTerminal?: boolean;
+    hideHeader?: boolean;
+    hideAnnoyingEyelash?: boolean;
+    hideEggs?: boolean;
+}
+
+const {
+    hideHeader = false,
+    title,
+    description,
+    favicon,
+    headerVariant = 'default',
+    hideFooter = false,
+    hideTerminal = false,
+    hideAnnoyingEyelash = false,
+    hideEggs = false,
+} = Astro.props;
+const gitBranch = await getGitBranch();
+const commitHash = await getLatestCommitHash();
+const commitMessage = await getLatestCommitMessage();
+const repoUrl = getGitHubRepoUrl();
+
+// Get tenant from middleware (defaults to PUBLIC_TENANT_DEFAULT_SLUG)
+const tenantSlug = Astro.locals.tenantSlug || import.meta.env.PUBLIC_TENANT_DEFAULT_SLUG || 'nickberens';
+
+// Load blog posts for menu
+const blogPosts = (await getCollection('blog')).map(({ slug, data }) => ({
+  slug,
+  title: data?.title ?? 'Untitled',
+  pubDate: data?.pubDate ? data.pubDate.toISOString() : null
+}));
+---
+
+<html lang="en">
+<Head
+    title={title}
+    description={description}
+    favicon={favicon}
+>
+</Head>
+<body>
+<SiteHeader
+    client:only="vue"
+    gitBranch={gitBranch}
+    variant={headerVariant}
+    hideHeader={hideHeader}
+    tenantSlug={tenantSlug}
+/>
+<BlogMenuLoader
+    client:only="vue"
+    posts={blogPosts}
+/>
+<slot/>
+<SiteFooter
+    commitHash={commitHash}
+    commitMessage={commitMessage}
+    repoUrl={repoUrl}
+    hideFooter={hideFooter}
+    client:load
+/>
+
+<script>
+    console.log(`
+%c███╗   ██╗██╗ ██████╗██╗  ██╗    █████╗ ██╗
+████╗  ██║██║██╔════╝██║ ██╔╝   ██╔══██╗██║
+██╔██╗ ██║██║██║     █████╔╝    ███████║██║
+██║╚██╗██║██║██║     ██╔═██╗    ██╔══██║██║
+██║ ╚████║██║╚██████╗██║  ██╗██╗██║  ██║██║
+╚═╝  ╚═══╝╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝`,
+        "background: linear-gradient(to right, #ff0000, #00ff00, #5959ff);;" +
+        " -webkit-background-clip: text; background-clip: text;" +
+        " -webkit-text-fill-color: transparent; font-weight: bold;" +
+        " font-size: 2vw; height: auto"
+    )
+    console.log(
+        `%cWelcome to my website!`,
+        "color: #00ff00; font-weight: bold; font-size: 4vw;"
+    );
+</script>
+
+</body>
+</html>

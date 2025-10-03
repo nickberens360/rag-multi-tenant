@@ -1,0 +1,9 @@
+{
+  "name": "Cowboy",
+  "family": "Cowboy",
+  "category": "display",
+  "backgroundColor": "yellow",
+  "titleFontSize": "24vw",
+  "description": "A bold display font perfect for headings and titles",
+  "fontUrl": "/fonts/cowboy.woff"
+}

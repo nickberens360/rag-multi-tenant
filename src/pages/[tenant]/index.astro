@@ -1,0 +1,84 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ChatBot from '../../components/ChatBot.vue';
+import ChatHistory from '../../components/ChatHistory.vue';
+import PageSection from '../../components/PageSection.vue';
+import { tenantFromAstro, isValidTenantSlug } from '../../utils/tenant';
+
+// Static paths for known tenants (can be extended via environment or database)
+export function getStaticPaths() {
+  const defaultSlug = import.meta.env.PUBLIC_TENANT_DEFAULT_SLUG || 'nickberens';
+
+  // Add known tenant slugs here
+  const knownTenants = [
+    defaultSlug,
+    'default',    // Backend default tenant slug (DEFAULT_TENANT_SLUG)
+    'acme',       // Example tenant
+    'demo',       // Example tenant
+    'test-org',   // Test organization
+  ];
+
+  return knownTenants.map(tenant => ({
+    params: { tenant }
+  }));
+}
+
+const tenant = Astro.params.tenant;
+
+// Guard: Validate tenant slug format
+if (!tenant || !isValidTenantSlug(tenant)) {
+  return Astro.redirect('/tenant-not-found');
+}
+
+// Get tenant context
+const tenantSlug = tenantFromAstro(Astro);
+
+// Capitalize first letter for display
+const displayName = tenantSlug.charAt(0).toUpperCase() + tenantSlug.slice(1);
+---
+
+<Layout
+    title={`${displayName} AI | Chat Assistant`}
+    description={`AI chatbot for ${displayName} - powered by intelligent knowledge base`}
+    hideFooter={true}
+    hideTerminal={true}
+    hideAnnoyingEyelash={true}
+    headerVariant="mobile-condensed"
+    hideEggs={true}
+>
+  <PageSection
+      data-section-color="black"
+      background-color="black"
+      data-section-theme="dark"
+      full-height
+      full-width
+      class:list={'nick-ai-page'}
+  >
+    <div class="chat-layout">
+      <ChatHistory client:only="vue"/>
+      <ChatBot
+          client:only="vue"
+          theme="dark"
+      />
+    </div>
+  </PageSection>
+</Layout>
+
+<style>
+    .chat-layout {
+        display: flex;
+        overflow: hidden;
+        margin-top: var(--site-header-height);
+    }
+    @supports not (height: 100dvh) {
+      .chat-layout {
+        height: calc(100vh - var(--site-header-height));
+      }
+    }
+
+    @supports (height: 100dvh) {
+      .chat-layout {
+        height: calc(100dvh - var(--site-header-height));
+      }
+    }
+</style>

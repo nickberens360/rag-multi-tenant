@@ -1,0 +1,37 @@
+# Update this file as tasks are completed. See tasks.yaml for canonical definitions.
+version: 1
+updated: "2025-09-27"
+
+status:
+  # Backend hardening
+  backend_db_session_tenant_guc_hardening: completed
+  backend_audit_logger_uuid_serialization: completed
+  backend_mount_tenant_prefixed_admin_routers: completed
+  backend_welcome_questions_admin_filter: completed
+  backend_welcome_questions_public_filter: completed
+  backend_followup_endpoints_db_dependency: completed
+  backend_followup_insert_tenant_fallback: completed
+  backend_followup_reads_explicit_tenant_filter: completed
+  backend_admin_settings_reads_explicit_tenant_filter: completed
+
+  # Frontend routing + API
+  frontend_router_tenant_prefix_and_redirect: completed
+  frontend_api_interceptor_tenant_baseurl: completed
+
+  # Frontend reactivity (views/components)
+  frontend_reactivity_welcome_and_followup: completed
+  frontend_reactivity_knowledge_sources: completed
+  frontend_reactivity_settings_views: completed
+
+notes:
+  backend_followup_reads_explicit_tenant_filter: |
+    Completed: Added explicit tenant_id filters to all followup category/question read queries.
+    Verified that get_followup_categories, get_followup_questions, and get_followup_category_stats
+    all now include tenant filtering even when accessed with superuser privileges.
+  backend_admin_settings_reads_explicit_tenant_filter: |
+    Completed: Added explicit tenant filters to all admin_settings and taxonomy_settings_history queries.
+    Fixed 5 queries in taxonomy version history endpoints that were missing tenant filters.
+  frontend_reactivity_settings_views: |
+    Completed: Added tenant-change watchers to all 6 settings views (Core, Knowledge, Taxonomy,
+    Response, Security, Features). Each view now properly reloads data when switching organizations.
+

@@ -1,0 +1,26 @@
+# Update this file as tasks are completed. See tasks.yaml for canonical definitions.
+version: 1
+updated: "2025-09-28"
+
+status:
+  knowledge_vector_single_store_tenant_metadata: completed
+  knowledge_indexer_add_tenant_meta: completed
+  knowledge_retriever_tenant_filtered_search: completed
+  knowledge_db_add_tenant_id_rls: completed
+  knowledge_upload_endpoints: completed
+  knowledge_sync_tenant_filter: completed
+
+notes:
+  implementation_completed: "2025-09-28"
+  implementation_details:
+    - "Added tenant-aware methods to SemanticSearcher for vector operations"
+    - "Modified unified_retriever to stamp tenant metadata on all chunks"
+    - "Threaded tenant_id through complete query pipeline with proper caching"
+    - "Created database migration for tenant_id column with Row Level Security"
+    - "Implemented tenant-scoped upload endpoints with validation and quotas"
+    - "Updated sync operations to support tenant filtering and reconciliation"
+  validation_required:
+    - "Test file upload under tenant A and verify tenant B cannot access"
+    - "Verify shared content appears to all tenants when enabled"
+    - "Confirm RLS policies prevent cross-tenant data access"
+

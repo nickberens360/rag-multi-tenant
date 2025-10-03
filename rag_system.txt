@@ -1,0 +1,159 @@
+╭───────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                         │
+│                                                   │
+│   /help for help, /status for your current setup  │
+│                                                   │
+│   cwd: /Users/nickberens/Webstorm/nickberens      │
+╰───────────────────────────────────────────────────╯
+
+> /clear
+  ⎿  (no content)
+
+> can you give me a diagram of how the rag system works?
+
+⏺ I'll create a diagram showing how your RAG system works based on the codebase architecture.
+
+⏺ Update Todos
+  ⎿  ☐ Analyze the unified RAG system architecture
+     ☐ Create a visual diagram of the RAG flow
+
+⏺ Update Todos
+  ⎿  ☐ Analyze the unified RAG system architecture
+     ☐ Create a visual diagram of the RAG flow
+
+⏺ Read(backend/core/unified_retriever.py)
+  ⎿  Read 278 lines (ctrl+r to expand)
+
+⏺ Read(backend/core/smart_query_handler.py)
+  ⎿  Read 180 lines (ctrl+r to expand)
+
+⏺ Read(backend/routes/query.py)
+  ⎿  Read 181 lines (ctrl+r to expand)
+
+⏺ Update Todos
+  ⎿  ☒ Analyze the unified RAG system architecture
+     ☐ Create a visual diagram of the RAG flow
+
+⏺ Here's how your unified RAG system works:
+
+  graph TB
+      %% User Input
+      A[User Query] --> B[Security Validator]
+      B --> C[Query Router]
+
+      %% Query Routing
+      C --> D{Query Type?}
+      D -->|Image Search| E[Illustration Service]
+      D -->|AI Text| F[Smart Query Handler]
+
+      %% Image Path
+      E --> G[Search illustrations.json]
+      G --> H[Return Image Results]
+
+      %% AI Text Path - Smart Routing
+      F --> I[Query Intent Analysis]
+      I --> J[Unified Retriever]
+
+      %% Unified Retriever System
+      J --> K[Auto Route Query]
+      K --> L{Content Type Detection}
+      L -->|Experience| M[Experience Docs]
+      L -->|Technical| N[Technical Docs]
+      L -->|Skills| O[Skills Docs]
+      L -->|Creative| P[Creative Docs]
+      L -->|Projects| Q[Project Docs]
+      L -->|About| R[About Docs]
+
+      %% Content Sources (Auto-Indexed)
+      S[backend/knowledge/] --> T[Chroma Vector Store]
+      U[public/*.json] --> T
+      V[Any File Type] --> T
+
+      %% Vector Search
+      M --> W[Semantic Search]
+      N --> W
+      O --> W
+      P --> W
+      Q --> W
+      R --> W
+
+      W --> X[Score & Filter Results]
+      X --> Y[Context Selection]
+      Y --> Z[LLM Chain]
+
+      %% LLM Processing
+      Z --> AA[Claude/Gemini]
+      AA --> BB{Rate Limited?}
+      BB -->|Yes| CC[Fallback Model]
+      BB -->|No| DD[Stream Response]
+      CC --> DD
+
+      %% Response Enhancement
+      DD --> EE[Response Service]
+      EE --> FF[Followup Service]
+      FF --> GG[Final Response]
+
+      %% Caching & Logging
+      I --> HH[(Query Cache)]
+      GG --> II[Query Logger]
+
+      %% Content Auto-Discovery
+      JJ[File System] --> KK[Auto Discovery]
+      KK --> LL[Content Analysis]
+      LL --> MM[Metadata Extraction]
+      MM --> NN[Hash Tracking]
+      NN --> T
+
+      %% Styling
+      classDef userInput fill:#e1f5fe
+      classDef processing fill:#f3e5f5
+      classDef storage fill:#e8f5e8
+      classDef ai fill:#fff3e0
+
+      class A,B userInput
+      class C,D,F,I,K,L,W,X,Y processing
+      class T,HH,S,U,V,JJ storage
+      class Z,AA,BB,CC,DD ai
+
+  Key Components:
+
+  1. Auto-Discovery System
+
+  - Files: Scans backend/knowledge/ and public/ directories
+  - Content Analysis: Automatically detects content types (technical, experience, skills, etc.)
+  - Hash Tracking: Only re-indexes changed files
+  - Metadata Extraction: Adds rich metadata for smart filtering
+
+  2. Smart Query Routing
+
+  - Intent Analysis: Understands what users want (question, retrieval, explanation)
+  - Topic Detection: Identifies relevant content areas automatically
+  - Complexity Assessment: Adjusts response approach based on query complexity
+
+  3. Unified Vector Store
+
+  - Single Chroma Database: All content in one optimized store
+  - Semantic Search: Vector similarity with intelligent filtering
+  - Content Type Filtering: Routes to most relevant documents
+  - Smart Scoring: Combines similarity scores with metadata relevance
+
+  4. Intelligent Context Selection
+
+  - Duplicate Removal: Eliminates redundant content
+  - Quality Scoring: Ranks documents by relevance
+  - Token Management: Fits context within model limits
+  - Caching: Stores frequent query results
+
+  5. Enhanced Response Pipeline
+
+  - Model Fallback: Automatically switches between Claude/Gemini
+  - Rate Limit Handling: Graceful degradation when models are limited
+  - Follow-up Generation: Creates intelligent next questions
+  - Streaming Responses: Real-time text generation
+
+  The system requires zero manual configuration - just drop files in directories and it automatically indexes, understands, and intelligently routes queries to the most relevant
+   content!
+
+⏺ Update Todos
+  ⎿  ☒ Analyze the unified RAG system architecture
+     ☒ Create a visual diagram of the RAG flow

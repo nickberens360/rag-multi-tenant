@@ -1,0 +1,63 @@
+# Minimal, working configuration - Start simple, add complexity gradually
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+# Simple test runner - no coverage by default (add --cov manually when needed)
+addopts = [
+    "-v",
+    "--tb=short",
+]
+# Basic markers for organization
+markers = [
+    "unit: Unit tests (fast)",
+    "integration: Integration tests (slower)",
+    "rls: Row Level Security tests",
+    "tenant: Multi-tenant tests",
+]
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.flake8]
+max-line-length = 120
+# Minimal ignores - only what Black conflicts with
+extend-ignore = [
+    "E203",  # whitespace before ':' (Black handles this)
+    "W503",  # line break before binary operator (Black handles this)
+]
+# Ignore common patterns that aren't real issues
+per-file-ignores = [
+    "__init__.py:F401",  # Unused imports in __init__ are OK
+    "tests/*:F401,F811",  # Tests can have duplicate names and unused imports
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "node_modules",
+    "build",
+    "dist",
+]
+
+[tool.mypy]
+python_version = "3.11"
+# Relaxed settings for faster development
+ignore_missing_imports = true
+follow_imports = "silent"
+show_error_codes = true
+warn_unused_configs = true
+# Don't be too strict about types
+no_implicit_optional = false
+strict_optional = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false

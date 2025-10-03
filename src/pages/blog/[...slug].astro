@@ -1,0 +1,123 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import PageSection from '../../components/PageSection.vue';
+import BlogPostHeader from '../../components/blog/BlogPostHeader.vue';
+import ContentPrompt from '../../components/blog/ContentPrompt.vue';
+
+export async function getStaticPaths() {
+  const blogEntries = await getCollection('blog');
+  return blogEntries.map(entry => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<Layout title={entry.data.title} description={entry.data.description}>
+  <PageSection
+    data-section-color={entry.data.backgroundColor || "white"}
+    data-section-theme={entry.data.theme || "light"}
+    background-color={entry.data.backgroundColor || "white"}
+    full-height
+  >
+    <article>
+      <BlogPostHeader
+        title={entry.data.title}
+        pubDate={entry.data.pubDate}
+        author={entry.data.author}
+        tags={entry.data.tags}
+        theme={entry.data.theme || 'light'}
+        client:load
+        class="mb-16"
+      />
+
+      {entry.data.aiPrompt && (
+        <ContentPrompt
+          aiPrompt={entry.data.aiPrompt}
+          theme={entry.data.theme || 'light'}
+          client:load
+        />
+      )}
+
+      <div class={`content ${(entry.data.theme || 'light') === 'light' ? 'theme-light' : 'theme-dark'}`}>
+        <Content />
+      </div>
+    </article>
+  </PageSection>
+</Layout>
+
+<style>
+  .content {
+    line-height: 1.6;
+    max-width: 800px;
+    margin: auto;
+  }
+
+  .content :global(h2) {
+    font-size: var(--font-size-xl);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(h3) {
+    font-size: var(--font-size-lg);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .content :global(p) {
+    margin-bottom: 1.5rem;
+  }
+  .content :global(pre) {
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Theme-based text colors */
+  .theme-light {
+    color: #333333;
+  }
+
+  .theme-light :global(h1),
+  .theme-light :global(h2),
+  .theme-light :global(h3),
+  .theme-light :global(h4),
+  .theme-light :global(h5),
+  .theme-light :global(h6) {
+    color: #1a1a1a;
+  }
+
+  .theme-light :global(a) {
+    color: #0066cc;
+  }
+
+  .theme-light :global(a:hover) {
+    color: #004499;
+  }
+
+  .theme-dark {
+    color: #e0e0e0;
+  }
+
+  .theme-dark :global(h1),
+  .theme-dark :global(h2),
+  .theme-dark :global(h3),
+  .theme-dark :global(h4),
+  .theme-dark :global(h5),
+  .theme-dark :global(h6) {
+    color: #ffffff;
+  }
+
+  .theme-dark :global(a) {
+    color: #66b3ff;
+  }
+
+  .theme-dark :global(a:hover) {
+    color: #99ccff;
+  }
+
+</style>

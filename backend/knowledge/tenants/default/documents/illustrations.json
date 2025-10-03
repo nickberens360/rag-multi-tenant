@@ -1,0 +1,77 @@
+[
+  {
+    "file": "dumb-doug.jpg",
+    "title": "Kinda Dumb Doug",
+    "tags": ["doug", "character", "illustration", "humor"]
+  },
+  {
+    "file": "flying-robot.png",
+    "title": "Robot Illustration",
+    "tags": ["robot", "flying", "character", "technology", "illustration"]
+  },
+  {
+    "file": "snake-flying.png",
+    "title": "Snake Illustration",
+    "tags": ["snake", "flying", "animal", "character", "illustration"]
+  },
+  {
+    "file": "cat-flower.png",
+    "title": "Friend With Flower",
+    "tags": ["cat", "flower", "friend", "character", "illustration"]
+  },
+  {
+    "file": "doug-fights-back.jpg",
+    "title": "Doug Fights Back",
+    "tags": ["doug", "character", "action", "fighting", "illustration", "different", "favorite"]
+  },
+  {
+    "file": "pool-shark.jpg",
+    "title": "Pool Shark",
+    "tags": ["shark", "pool", "game", "character", "illustration"]
+  },
+  {
+    "file": "vulture.png",
+    "title": "Vulture Illustration",
+    "tags": ["vulture", "bird", "animal", "character", "illustration"]
+  },
+  {
+    "file": "dope-goose.jpg",
+    "title": "Dope Goose",
+    "tags": ["goose", "bird", "cool", "character", "illustration", "different"]
+  },
+  {
+    "file": "smalltime.png",
+    "title": "Smalltime Illustration",
+    "tags": ["smalltime", "character", "illustration"]
+  },
+  {
+    "file": "winger.png",
+    "title": "Smalltime Wing Face",
+    "tags": ["winger", "wing", "face", "character", "illustration"]
+  },
+  {
+    "file": "eat-us-for-fun.jpg",
+    "title": "Eat Us For Fun",
+    "tags": ["eating", "fun", "humor", "character", "illustration"]
+  },
+  {
+    "file": "dont.jpg",
+    "title": "Don't Illustration",
+    "tags": ["dont", "warning", "humor", "illustration"]
+  },
+  {
+    "file": "snake-hug.jpg",
+    "title": "Snake Hug",
+    "tags": ["snake", "hug", "affection", "character", "illustration", "favorite"]
+  },
+  {
+    "file": "haz-hug.png",
+    "title": "Haz Hug",
+    "tags": ["haz", "hug", "character", "affection", "illustration"]
+  },
+  {
+    "file": "hide-out.png",
+    "title": "Hide Out",
+    "tags": ["hiding", "place", "location", "illustration"]
+  }
+]

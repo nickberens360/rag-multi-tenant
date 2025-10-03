@@ -1,0 +1,72 @@
+{
+  "version": "1",
+  "categories": {
+    "experience": {
+      "synonyms": [
+        "experience",
+        "work",
+        "job",
+        "role",
+        "company",
+        "resume",
+        "cv",
+        "career",
+        "employment",
+        "position"
+      ],
+      "regex": ["\\b(experience|work|career|employment|resume|cv|role|company|position)\\b"]
+    },
+    "skills": {
+      "synonyms": [
+        "skill",
+        "skills",
+        "technology",
+        "technologies",
+        "expertise",
+        "know",
+        "proficient"
+      ],
+      "regex": ["\\b(skill|skills|technology|technologies|expertise|know|proficient)\\b"]
+    },
+    "about": {
+      "synonyms": [
+        "about",
+        "who",
+        "background",
+        "interest",
+        "bio",
+        "philosophy",
+        "passion"
+      ],
+      "regex": ["\\b(about|who|background|interest|bio|philosophy|passion)\\b"]
+    },
+    "creative": {
+      "synonyms": [
+        "illustration",
+        "illustrations",
+        "art",
+        "design",
+        "creative",
+        "inspiration",
+        "artistic",
+        "gallery",
+        "portfolio"
+      ],
+      "regex": ["\\b(illustration|illustrations|art|design|creative|inspiration|artistic|gallery|portfolio)\\b"],
+      "metadata": {"is_illustration_data": true},
+      "routing": {"k": 24, "score_threshold": 0.0}
+    },
+    "project": {
+      "synonyms": ["project", "projects", "built", "created", "developed"],
+      "regex": ["\\b(project|projects|built|created|developed)\\b"]
+    },
+    "technical": {
+      "synonyms": ["technical", "code", "programming", "development", "software", "engineering", "api"],
+      "regex": ["\\b(technical|code|programming|development|software|engineering|api)\\b"]
+    }
+  },
+  "router": {
+    "ignore_words": ["show", "me", "please", "find", "get", "display", "tell", "describe", "explain"]
+  }
+}
+

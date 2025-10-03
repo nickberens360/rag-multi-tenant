@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Personal Portfolio Website",
+    "description": "A modern, responsive portfolio website built with Astro and Vue.js",
+    "technologies": ["Astro", "Vue.js", "TypeScript", "Tailwind CSS"],
+    "year": "2024",
+    "status": "Active",
+    "url": "https://nickberens.me"
+  },
+  {
+    "title": "RAG Chat System",
+    "description": "AI-powered chat system using retrieval-augmented generation with LangChain",
+    "technologies": ["Python", "LangChain", "FastAPI", "Vue.js"],
+    "year": "2025",
+    "status": "In Development",
+    "features": ["Auto-discovery", "Vector search", "Context-aware responses"]
+  },
+  {
+    "title": "CSS Framework",
+    "description": "Custom CSS framework with utility classes and design system",
+    "technologies": ["CSS", "Sass", "JavaScript"],
+    "year": "2023",
+    "status": "Completed",
+    "highlights": ["Responsive design", "Accessibility focused", "Modular architecture"]
+  }
+]

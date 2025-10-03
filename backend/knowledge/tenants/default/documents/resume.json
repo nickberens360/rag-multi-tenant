@@ -1,0 +1,151 @@
+{
+  "document_type": "resume",
+  "introduction": "Nick Berens' professional resume and CV showcasing his experience, skills, and background.",
+  "summary": "Passionate problem solver and lifelong learner with 10+ years' experience developing and designing maintainable and scalable frontends.",
+  "skills": [
+    {
+      "name": "Vue.js",
+      "category": "Frontend Frameworks"
+    },
+    {
+      "name": "Nuxt.js",
+      "category": "Frontend Frameworks"
+    },
+    {
+      "name": "Vuetify.js",
+      "category": "UI Libraries"
+    },
+    {
+      "name": "Vuex/Pinia",
+      "category": "State Management"
+    },
+    {
+      "name": "Vue Router",
+      "category": "Routing"
+    },
+    {
+      "name": "JavaScript",
+      "category": "Languages"
+    },
+    {
+      "name": "CSS/Scss",
+      "category": "Styling"
+    },
+    {
+      "name": "Responsive CSS Design",
+      "category": "Styling"
+    },
+    {
+      "name": "WordPress",
+      "category": "CMS"
+    },
+    {
+      "name": "Prismic.io CMS",
+      "category": "CMS"
+    },
+    {
+      "name": "GIT",
+      "category": "Version Control"
+    },
+    {
+      "name": "Agile Development",
+      "category": "Methodologies"
+    },
+    {
+      "name": "Netlify",
+      "category": "Deployment"
+    },
+    {
+      "name": "Chart.js",
+      "category": "Data Visualization"
+    },
+    {
+      "name": "IntelliJ IDEA",
+      "category": "Software Tools"
+    },
+    {
+      "name": "Adobe Photoshop",
+      "category": "Software Tools"
+    },
+    {
+      "name": "Adobe XD",
+      "category": "Software Tools"
+    },
+    {
+      "name": "Sketch",
+      "category": "Software Tools"
+    },
+    {
+      "name": "Atlassian Software",
+      "category": "Software Tools"
+    },
+    {
+      "name": "GitHub Actions",
+      "category": "DevOps"
+    }
+  ],
+  "experience": [
+    {
+      "company": "Hillman Group, Robotics & Digital Solutions",
+      "role": "Frontend Developer",
+      "dates": "10/2021 – 2/2025",
+      "location": "Boulder, CO",
+      "points": [
+        "Led successful migration of enterprise CRM dashboard from Vue/Vuetify 2 to 3, modernizing codebase and improving application maintainability.",
+        "Built headless CMS marketing solutions using Vue/Nuxt, integrating Prismic.io APIs to enable dynamic content management.",
+        "Engineered custom component documentation plugin, streamlining development workflows and fostering collaborative knowledge sharing across teams.",
+        "Built Axios caching layer for efficient data management, boosting CRM responsiveness and streamlining user workflow.",
+        "Facilitated UX research sessions with stakeholders using card sorting methods to optimize navigation structure and information architecture.",
+        "Led an initiative to integrate Cypress into our workflow to ensure feature integrity through end-to-end testing.",
+        "Led product feature design initiatives using Adobe XD, reducing workload for the design team when needed.",
+        "Actively contributed to daily standups, sprint planning and retrospectives to ensure project alignment and continuous improvement."
+
+      ]
+    },
+    {
+      "company": "Wisnet.com LLC",
+      "role": "Frontend Developer",
+      "dates": "8/2012 – 10/2021",
+      "location": "Fond Du Lac, WI",
+      "points": [
+        "Developed Vue.js interfaces integrated with Laravel and WordPress APIs, focusing on scalability and maintainability.",
+        "Created component library documentation with Storybook.js to improve team development efficiency.",
+        "Built headless WordPress sites using Nuxt.js and Netlify for improved performance.",
+        "Set up automated deployments to Netlify and Cloudflare Pages.",
+        "Developed over 100 custom WordPress themes for diverse client needs.",
+        "Maintained 200+ WordPress sites across WP Engine and Kinsta platforms."
+      ]
+    },
+    {
+      "company": "Thrivent Financial",
+      "role": "Frontend Developer Intern",
+      "dates": "6/2012 – 8/2012",
+      "location": "Appleton, WI",
+      "points": [
+        "Wrote semantic HTML and scalable CSS per issue requests at Thrivent Financial."
+
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Fox Valley Technical College",
+      "degree": "Associate of Applied Science: Web Design and Development",
+      "dates": "Aug 2008 – Jun 2012",
+      "location": "Appleton, WI",
+      "notes": "Graduated with honors, 3.89 GPA."
+    }
+  ],
+  "accomplishments": [
+    {
+      "title": "Atomic Docs",
+      "description": "Developed an open-source tool for creating and managing Scss components called Atomic Docs with 781 stars on GitHub.",
+      "link": "https://atomicdocs.io/"
+    },
+    {
+      "title": "CSS-Tricks Article",
+      "description": "Authored an article for css-tricks.com discussing style guide driven development.",
+      "link": "https://css-tricks.com/style-guide-driven-development-atomic-docs/"
+    }
+  ]
+}

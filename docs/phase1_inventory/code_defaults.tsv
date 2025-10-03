@@ -1,0 +1,76 @@
+File	Constant Name	Value	Type	Classification	Notes
+config_v2.py	PRIMARY_LLM_DEFAULT	claude	str	admin-managed	Primary LLM default
+config_v2.py	CLAUDE_MODEL_DEFAULT	claude-3-5-sonnet-20241022	str	admin-managed	Claude model default
+config_v2.py	GEMINI_MODEL_DEFAULT	gemini-1.5-flash	str	admin-managed	Gemini model default
+config_v2.py	EMBEDDING_MODEL_DEFAULT	models/embedding-001	str	admin-managed	Embedding model default
+config_v2.py	SEARCH_THRESHOLD_DEFAULT	55	int	admin-managed	Search threshold percentage
+config_v2.py	MAX_RESULTS_DEFAULT	15	int	admin-managed	Maximum search results
+config_v2.py	ILLUSTRATIONS_PATH_DEFAULT	backend/knowledge/illustrations.json	str	admin-managed	Illustrations file path
+config_v2.py	REQUEST_TIMEOUT_DEFAULT	60	int	admin-managed	Request timeout seconds
+config_v2.py	ENABLE_CACHING_DEFAULT	true	bool	admin-managed	Caching enabled
+config_v2.py	CACHE_TTL_DEFAULT	3600	int	admin-managed	Cache TTL seconds
+config_v2.py	MAX_CACHE_SIZE_DEFAULT	1000	int	admin-managed	Maximum cache entries
+config_v2.py	RAG_USE_MMR_DEFAULT	false	bool	admin-managed	Use MMR for RAG
+config_v2.py	RAG_USE_HEADING_SPLITTER_DEFAULT	false	bool	admin-managed	Use heading-based splitting
+config_v2.py	RAG_ENABLE_DELETE_DEFAULT	false	bool	admin-managed	Enable RAG deletion
+config_v2.py	RAG_SAFE_DELETE_DEFAULT	true	bool	admin-managed	Safe delete mode
+config_v2.py	RAG_SCORE_THRESHOLD_DEFAULT	0.2	float	admin-managed	RAG score threshold
+config_v2.py	RAG_MMR_K_DEFAULT	4	int	admin-managed	MMR k parameter
+config_v2.py	RAG_MMR_FETCH_K_DEFAULT	20	int	admin-managed	MMR fetch_k parameter
+config_v2.py	RAG_MMR_LAMBDA_MULT_DEFAULT	0.5	float	admin-managed	MMR lambda multiplier
+config_v2.py	RAG_INDEX_DIRS_DEFAULT	["backend/knowledge", "public"]	List[str]	admin-managed	Index directories
+config_v2.py	ENABLE_HETEROGENEITY_FALLBACK_DEFAULT	false	bool	admin-managed	Enable heterogeneity fallback
+config_v2.py	ENABLE_FOLLOWUP_PREGENERATION_DEFAULT	false	bool	admin-managed	Enable followup pregeneration
+config_v2.py	FOLLOWUP_MODE_DEFAULT	static	str	admin-managed	Followup mode
+config_v2.py	CACHE_FOLLOWUP_RESPONSES_DEFAULT	true	bool	admin-managed	Cache followup responses
+config_v2.py	LOG_LEVEL_DEFAULT	INFO	str	admin-managed	Log level
+config_v2.py	RATE_LIMIT_DEFAULT	5/minute	str	admin-managed	Rate limit
+config_v2.py	HOST_DEFAULT	0.0.0.0	str	env-only	Server host
+config_v2.py	PORT_DEFAULT	8000	int	env-only	Server port
+config_v2.py	ADMIN_DB_PATH_DEFAULT	backend/logs/admin_monitoring.db	str	admin-managed	Admin DB path
+config_v2.py	ADMIN_DB_TIMEOUT_SECONDS_DEFAULT	10	int	admin-managed	Admin DB timeout
+config_v2.py	ADMIN_DB_BUSY_TIMEOUT_MS_DEFAULT	15000	int	admin-managed	Admin DB busy timeout
+config_v2.py	SQLITE_JOURNAL_MODE_DEFAULT	WAL	str	admin-managed	SQLite journal mode
+config_v2.py	ADMIN_DB_CONNECT_RETRIES_DEFAULT	7	int	admin-managed	DB connection retries
+config_v2.py	ADMIN_DB_CONNECT_RETRY_DELAY_MS_DEFAULT	300	int	admin-managed	DB retry delay
+config_v2.py	DEFAULT_SEARCH_K_DEFAULT	8	int	admin-managed	Default search k
+config_v2.py	EXPANDED_SEARCH_K_DEFAULT	12	int	admin-managed	Expanded search k
+config_v2.py	SEARCH_EXPANSION_MULTIPLIER_DEFAULT	3	int	admin-managed	Search expansion multiplier
+config_v2.py	DEFAULT_DISTANCE_THRESHOLD_DEFAULT	0.5	float	admin-managed	Default distance threshold
+config_v2.py	INCLUSIVE_DISTANCE_THRESHOLD_DEFAULT	1.0	float	admin-managed	Inclusive distance threshold
+config_v2.py	BROAD_DISTANCE_THRESHOLD_DEFAULT	1.2	float	admin-managed	Broad distance threshold
+config_v2.py	RETRIEVAL_SCORE_THRESHOLD_DEFAULT	0.3	float	admin-managed	Retrieval score threshold
+config_v2.py	LOW_SIMILARITY_THRESHOLD_DEFAULT	0.7	float	admin-managed	Low similarity threshold
+config_v2.py	DEFAULT_ILLUSTRATION_COUNT_DEFAULT	10	int	admin-managed	Default illustration count
+config_v2.py	MAX_ILLUSTRATION_SEARCH_DEFAULT	200	int	admin-managed	Max illustration search
+config_v2.py	SHORT_TERM_LENGTH_DEFAULT	6	int	admin-managed	Short term length
+config_v2.py	MEDIUM_TERM_LENGTH_DEFAULT	10	int	admin-managed	Medium term length
+config_v2.py	SHORT_TERM_FUZZY_THRESHOLD_DEFAULT	0.45	float	admin-managed	Short term fuzzy threshold
+config_v2.py	MEDIUM_TERM_FUZZY_THRESHOLD_DEFAULT	0.5	float	admin-managed	Medium term fuzzy threshold
+config_v2.py	LONG_TERM_FUZZY_THRESHOLD_DEFAULT	0.55	float	admin-managed	Long term fuzzy threshold
+config_v2.py	DEFAULT_FUZZY_THRESHOLD_DEFAULT	0.7	float	admin-managed	Default fuzzy threshold
+config_v2.py	DEFAULT_CACHE_HIT_RATE_DEFAULT	0.85	float	admin-managed	Default cache hit rate
+config_v2.py	DEFAULT_TOTAL_SOURCES_DEFAULT	15	int	admin-managed	Default total sources
+config_v2.py	DEFAULT_TOTAL_TOPICS_DEFAULT	8	int	admin-managed	Default total topics
+config_v2.py	DEFAULT_MAX_CONTEXT_LENGTH	2000	int	admin-managed	Default max context length
+config_v2.py	MAX_CONTEXT_DOCUMENTS	3	int	admin-managed	Max context documents
+config_v2.py	CONTEXT_FILL_RATIO	0.7	float	admin-managed	Context fill ratio
+config_v2.py	APP_TITLE	Nick Berens Portfolio API	str	admin-managed	Application title
+config_v2.py	APP_DESCRIPTION	Intelligent API for Portfolio	str	admin-managed	Application description
+config_v2.py	APP_VERSION	2.2.0	str	admin-managed	Application version
+performance_config.py	ENABLE_FAST_QUERY_CLASSIFIER	true	bool	admin-managed	Enable fast query classifier
+performance_config.py	ENABLE_FAST_CONTENT_CLASSIFIER	false	bool	admin-managed	Enable fast content classifier
+performance_config.py	ENABLE_LIGHTWEIGHT_CONTEXT	true	bool	admin-managed	Enable lightweight context
+performance_config.py	ENABLE_AGGRESSIVE_CACHING	true	bool	admin-managed	Enable aggressive caching
+performance_config.py	CONTENT_CLASSIFICATION_MODE	hybrid	str	admin-managed	Content classification mode
+performance_config.py	ENABLE_STARTUP_LLM_CLASSIFICATION	true	bool	admin-managed	Enable startup LLM classification
+performance_config.py	QUERY_ANALYSIS_TIMEOUT_MS	100	int	admin-managed	Query analysis timeout ms
+performance_config.py	CONTENT_PROCESSING_TIMEOUT_MS	50	int	admin-managed	Content processing timeout ms
+performance_config.py	MAX_CONTEXT_LENGTH	8000	int	admin-managed	Maximum context length
+performance_config.py	QUERY_CACHE_SIZE	1000	int	admin-managed	Query cache size
+performance_config.py	CONTENT_CACHE_SIZE	500	int	admin-managed	Content cache size
+performance_config.py	ENABLE_AB_TESTING	false	bool	admin-managed	Enable A/B testing
+performance_config.py	AB_TEST_FAST_CLASSIFIER	false	bool	admin-managed	A/B test fast classifier
+performance_config.py	FAST_CLASSIFIER_ROLLOUT_PERCENT	0	int	admin-managed	Fast classifier rollout percent
+performance_config.py	PERFORMANCE_MODE	balanced	str	admin-managed	Performance mode
+llm_chain.py	DEFAULT_PROMPTS	{system_template, user_template}	Dict	admin-managed	Default prompt templates

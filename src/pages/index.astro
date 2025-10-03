@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ChatBot from '../components/ChatBot.vue';
+import ChatHistory from '../components/ChatHistory.vue';
+import PageSection from '../components/PageSection.vue';
+---
+
+<Layout
+    title="Nick AI | Chat with Nick's AI Assistant"
+    description="An intelligent chatbot powered by Nick Berens' knowledge base"
+    hideFooter={true}
+    hideTerminal={true}
+    hideAnnoyingEyelash={true}
+    headerVariant="mobile-condensed"
+    hideEggs={true}
+>
+  <PageSection
+      data-section-color="black"
+      background-color="black"
+      data-section-theme="dark"
+      full-height
+      full-width
+      class:list={'nick-ai-page'}
+  >
+    <div class="chat-layout">
+      <ChatHistory client:only="vue"/>
+      <ChatBot
+          client:only="vue"
+          theme="dark"
+      />
+    </div>
+  </PageSection>
+</Layout>
+
+<style>
+    .chat-layout {
+        display: flex;
+        overflow: hidden;
+        margin-top: var(--site-header-height);
+    }
+    @supports not (height: 100dvh) {
+      .chat-layout {
+        height: calc(100vh - var(--site-header-height));
+      }
+    }
+
+    @supports (height: 100dvh) {
+      .chat-layout {
+        height: calc(100dvh - var(--site-header-height));
+      }
+    }
+</style>

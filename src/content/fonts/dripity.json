@@ -1,0 +1,9 @@
+{
+  "name": "Dripity",
+  "family": "Dripity",
+  "category": "display",
+  "backgroundColor": "lightgreen",
+  "titleFontSize": "30vw",
+  "description": "A unique display font with fluid, dripping characteristics",
+  "fontUrl": "/fonts/dripity.woff"
+}

@@ -1,0 +1,74 @@
+# Git and version control
+.git
+.gitignore
+
+# Documentation
+*.md
+README*
+
+# Development files
+.env
+.env.local
+.env.*.local
+
+# Node modules (will be installed in container)
+node_modules/
+admin/frontend/node_modules/
+
+# Build artifacts
+admin/frontend/dist/
+.astro/
+dist/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Claude Code
+.claude/
+
+# Railway
+.railway/
+
+# Dev-only utility scripts (avoid shipping ad-hoc root scripts)
+reset_admin_password.py
+check_permissions.py
+diagnose_data_permissions.py
+test_db_path.py
+test_volume_fix.py

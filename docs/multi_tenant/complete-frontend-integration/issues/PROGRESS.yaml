@@ -1,0 +1,33 @@
+# Update this file as tasks are completed. See tasks.yaml for canonical definitions.
+version: 1
+updated: "2025-10-01"
+
+status:
+  frontend_astro_tenant_routing: completed
+  frontend_tenant_resolution_error_boundaries: completed
+  chatbot_only_simplification: completed
+
+notes:
+  implementation_completed: "2025-10-01"
+  implementation_details:
+    - "Created src/middleware.ts with subdomain + path prefix tenant resolution"
+    - "Added src/utils/tenant.ts with tenantFromAstro, tenantHref, and validation utilities"
+    - "Converted to chatbot-only app: replaced root index.astro with chatbot interface"
+    - "Enhanced src/pages/[tenant]/index.astro with chatbot and getStaticPaths()"
+    - "Created src/pages/tenant-not-found.astro error page"
+    - "Created src/components/TenantBoundary.vue error boundary component"
+    - "Added PUBLIC_TENANT_DEFAULT_SLUG and ENABLE_TENANT_VALIDATION to .env and .env.example"
+    - "Removed all portfolio pages (resume, fonts, illustrations, atomic-docs, blog, nick-ai)"
+    - "Removed 21+ unused components (HeroBanner, FontCard, TerminalWindow, etc.)"
+    - "Simplified Layout.astro - removed unused imports and conditional portfolio features"
+  validation_completed: "2025-10-01"
+  validation_results:
+    - "✅ Root chatbot: http://localhost:4321/ → 200 OK"
+    - "✅ Tenant page: http://localhost:4321/nickberens/ → 200 OK"
+    - "✅ Invalid tenant: http://localhost:4321/invalid-xyz/ → 404 (not in static paths)"
+    - "✅ Component count reduced from 39 to 18 (kept only chatbot-related)"
+  architecture_notes:
+    - "App now serves chatbot interface at both root (/) and tenant paths (/[tenant]/)"
+    - "Static mode with getStaticPaths() - add new tenants by extending knownTenants array"
+    - "Middleware still provides tenant context but SSR not needed for chatbot-only use"
+

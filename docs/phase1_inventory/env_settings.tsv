@@ -1,0 +1,84 @@
+Setting Name	Current Value	Default Value	Used In	Classification	Notes
+ENVIRONMENT	development	development	config_v2.py, app_factory.py	env-only	Core environment detection
+IS_PRODUCTION	false	false	config_v2.py	env-only	Derived from ENVIRONMENT
+DEBUG_MODE	false	false	config_v2.py	env-only	Debug toggle
+ANTHROPIC_API_KEY	<secret>	None	config_v2.py	env-only	API key - must be secret
+GOOGLE_API_KEY	<secret>	None	config_v2.py	env-only	API key - must be secret
+GITHUB_TOKEN	<secret>	None	config_v2.py	env-only	Optional git integration
+ADMIN_DEFAULT_PASSWORD	<secret>	None	config_v2.py, admin_auth.py	env-only	Admin password - must be secret
+ADMIN_DEFAULT_USERNAME	admin	admin	config_v2.py, admin_auth.py	env-only	Admin username
+ADMIN_DEFAULT_EMAIL	None	None	admin_auth.py	env-only	Admin email
+PUBLIC_API_URL	https://nickberens-astro-production.up.railway.app	https://nickberens-astro-production.up.railway.app	config_v2.py	env-only	Deployment-specific
+PUBLIC_GITHUB_USERNAME	nickberens360	nickberens360	config_v2.py	env-only	Deployment-specific
+PUBLIC_GITHUB_REPO	nickberens-astro	nickberens-astro	config_v2.py	env-only	Deployment-specific
+PUBLIC_GA_TRACKING_ID	G-YRSSE66Z31	G-YRSSE66Z31	config_v2.py	env-only	Google Analytics
+RAILWAY_ENVIRONMENT_NAME	None	None	main.py	env-only	Railway deployment
+RAILWAY_RUN_UID	None	None	main.py	env-only	Railway deployment
+RAILWAY_VOLUME_MOUNT_PATH	None	None	main.py	env-only	Railway deployment
+RAILWAY_VOLUME_NAME	None	None	main.py	env-only	Railway deployment
+CORS_ORIGINS	None	calculated	config_v2.py	env-only	CORS configuration
+IP_HASH_SALT	<generated>	<generated>	config_v2.py	env-only	IP anonymization salt
+API_KEY_ENCRYPTION_SECRET	<secret>	None	api_key_manager.py	env-only	API key encryption
+TESTING	false	false	app_factory.py	env-only	Test environment flag
+SKIP_INDEXING	false	false	main.py, app_initializer_v2.py	env-only	Skip data indexing on startup
+FORCE_REBUILD_DATA	false	false	semantic_searcher.py, content_indexer.py	env-only	Force rebuild indices
+UNIFIED_PERSIST_DIR	backend/.unified_chroma	backend/.unified_chroma	diagnostics/__main__.py	env-only	ChromaDB persistence directory
+DISABLE_RATE_LIMITING	false	false	app_factory.py	env-only	Disable rate limiting
+FORCE_DISABLE_MAINTENANCE	false	false	app_factory.py	env-only	Force disable maintenance mode
+FAST_LOGIN_MODE	false	false	session_fingerprint.py	env-only	Fast login for development
+EXCLUDED_IPS	None	[]	config_v2.py, security_middleware.py	admin-managed	Can be overridden via SecuritySettings
+PRIMARY_LLM	claude	claude	config_v2.py	admin-managed	Can be overridden via SystemConfigurationSettings
+CLAUDE_MODEL	claude-3-5-sonnet-20241022	claude-3-5-sonnet-20241022	config_v2.py	admin-managed	Can be overridden via SystemConfigurationSettings
+GEMINI_MODEL	gemini-1.5-flash	gemini-1.5-flash	config_v2.py	admin-managed	Can be overridden via SystemConfigurationSettings
+EMBEDDING_MODEL	models/embedding-001	models/embedding-001	config_v2.py	admin-managed	Can be overridden via SystemConfigurationSettings
+REQUEST_TIMEOUT	60	60	config_v2.py	admin-managed	Can be overridden via SystemConfigurationSettings
+RATE_LIMIT	5/minute	5/minute	config_v2.py	admin-managed	Can be overridden via SystemConfigurationSettings
+ENABLE_CACHING	true	true	config_v2.py	admin-managed	Can be overridden via ResponseSettings
+CACHE_TTL_SECONDS	3600	3600	config_v2.py	admin-managed	Can be overridden via ResponseSettings
+MAX_CACHE_SIZE	1000	1000	config_v2.py	admin-managed	Can be overridden via SystemConfigurationSettings
+SEARCH_THRESHOLD	55	55	llm_chain.py	admin-managed	Semantic search threshold
+MAX_RESULTS	15	15	llm_chain.py	admin-managed	Max search results
+MAX_CONTEXT_LENGTH	8000	8000	performance_config.py	admin-managed	Context window limit
+MAX_CONTEXT_DOCUMENTS	3	3	config_v2.py	admin-managed	Can be overridden via ResponseSettings
+DEFAULT_MAX_CONTEXT_LENGTH	2000	2000	config_v2.py	admin-managed	Can be overridden via ResponseSettings
+CONTEXT_FILL_RATIO	0.7	0.7	config_v2.py	admin-managed	Can be overridden via ResponseSettings
+RAG_USE_MMR	false	false	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_USE_HEADING_SPLITTER	false	false	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_ENABLE_DELETE	false	false	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_SAFE_DELETE	true	true	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_SCORE_THRESHOLD	0.2	0.2	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_MMR_K	4	4	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_MMR_FETCH_K	20	20	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_MMR_LAMBDA_MULT	0.5	0.5	config_v2.py	admin-managed	Can be overridden via RagConfigurationSettings
+RAG_INDEX_DIRS	["backend/knowledge", "public"]	["backend/knowledge", "public"]	config_v2.py	admin-managed	Can be overridden via KnowledgeSettings
+ENABLE_HETEROGENEITY_FALLBACK	false	false	config_v2.py	admin-managed	Can be overridden via KnowledgeSettings
+HETEROGENEITY_FALLBACK_INCLUDE	[]	[]	config_v2.py	admin-managed	Can be overridden via KnowledgeSettings
+ENABLE_SMART_MODEL_SELECTION	true	true	config_v2.py	admin-managed	Model selection strategy
+RETRIEVAL_SCORE_THRESHOLD	0.3	0.3	config_v2.py	admin-managed	Retrieval score threshold
+SQLITE_JOURNAL_MODE	WAL	WAL	database_utils.py	admin-managed	SQLite configuration
+ADMIN_DB_TIMEOUT_SECONDS	10	10	admin_database.py	admin-managed	Database timeout
+ADMIN_DB_BUSY_TIMEOUT_MS	15000	15000	admin_database.py	admin-managed	Database busy timeout
+ADMIN_DB_CONNECT_RETRIES	7	7	admin_database.py	admin-managed	Database connection retries
+ADMIN_DB_CONNECT_RETRY_DELAY_MS	300	300	admin_database.py	admin-managed	Database retry delay
+ADMIN_DB_WRITE_RETRIES	5	5	admin_database.py	admin-managed	Database write retries
+ADMIN_DB_WRITE_RETRY_DELAY_MS	200	200	admin_database.py	admin-managed	Database write retry delay
+ADMIN_DB_AUDIT_TIMEOUT_SECONDS	5	5	audit_logger.py	admin-managed	Audit log timeout
+SEC_EVENTS_DB_TIMEOUT_SECONDS	10.0	10.0	security_events_database.py	admin-managed	Security events DB timeout
+SEC_EVENTS_DB_BUSY_TIMEOUT_MS	7000	7000	security_events_database.py	admin-managed	Security events busy timeout
+KNOWLEDGE_SYNC_AUTO_RECONCILE	false	false	knowledge_admin_sync.py	admin-managed	Knowledge sync auto-reconcile
+KNOWLEDGE_SYNC_INTERVAL_SECONDS	0	0	knowledge_admin_sync.py	admin-managed	Knowledge sync interval
+CHROMA_AUTO_RESET_ON_CONFIG_ERROR	false	false	content_indexer.py	admin-managed	ChromaDB auto-reset on error
+ENABLE_FAST_QUERY_CLASSIFIER	true	true	performance_config.py	admin-managed	Performance optimization
+ENABLE_FAST_CONTENT_CLASSIFIER	false	false	performance_config.py	admin-managed	Performance optimization
+ENABLE_LIGHTWEIGHT_CONTEXT	true	true	performance_config.py	admin-managed	Performance optimization
+ENABLE_AGGRESSIVE_CACHING	true	true	performance_config.py	admin-managed	Performance optimization
+CONTENT_CLASSIFICATION_MODE	hybrid	hybrid	performance_config.py	admin-managed	Content classification mode
+ENABLE_STARTUP_LLM_CLASSIFICATION	true	true	performance_config.py	admin-managed	LLM classification on startup
+QUERY_ANALYSIS_TIMEOUT_MS	100	100	performance_config.py	admin-managed	Query analysis timeout
+CONTENT_PROCESSING_TIMEOUT_MS	50	50	performance_config.py	admin-managed	Content processing timeout
+QUERY_CACHE_SIZE	1000	1000	performance_config.py	admin-managed	Query cache size
+CONTENT_CACHE_SIZE	500	500	performance_config.py	admin-managed	Content cache size
+ENABLE_AB_TESTING	false	false	performance_config.py	admin-managed	A/B testing feature flag
+AB_TEST_FAST_CLASSIFIER	false	false	performance_config.py	admin-managed	A/B test fast classifier
+FAST_CLASSIFIER_ROLLOUT_PERCENT	0	0	performance_config.py	admin-managed	Fast classifier rollout percentage
+PERFORMANCE_MODE	balanced	balanced	performance_config.py	admin-managed	Performance mode setting

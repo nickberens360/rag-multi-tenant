@@ -1,0 +1,65 @@
+/* Typography System for RAG Admin Dashboard */
+/* Simple global Roboto setup - no complex variables needed */
+
+:root {
+  /* Single font family for everything */
+  --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Global font family - everything inherits Roboto */
+* {
+  font-family: var(--font-family) !important;
+}
+
+/* Base body styling */
+body {
+  font-family: var(--font-family);
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: 0em;
+}
+
+/* Only keep specialized styling for code blocks - font family is handled globally */
+.code-inline {
+  font-size: 0.9em;
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.code-block {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+}
+
+/* Dark theme adjustments for code blocks */
+.v-theme--dark .code-inline {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.v-theme--dark .code-block {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Performance optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Font loading optimization */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    font-display: swap;
+  }
+}

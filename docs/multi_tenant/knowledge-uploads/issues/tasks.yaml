@@ -1,0 +1,118 @@
+version: 1
+generated_for: knowledge-uploads-single-store
+
+tasks:
+  - id: knowledge_vector_single_store_tenant_metadata
+    title: Add tenant-aware add/search methods in SemanticSearcher
+    files:
+      - backend/core/semantic_searcher.py
+    search:
+      - "class SemanticSearcher"
+      - "def add_documents\("
+      - "def similarity_search_with_score\("
+    changes:
+      - add: method add_documents_for_tenant(docs, tenant_id, tenant_slug?) that stamps metadata and delegates to add_documents
+      - add: 'method similarity_search_with_score_for_tenant(query, tenant_id, k?) that applies where={"tenant_id": tid}'
+      - add: 'method get_documents(where=...) usage to support where={"tenant_id": tid} for counting/listing'
+    validations:
+      - command: rg
+        pattern: 'def add_documents_for_tenant\\(|def similarity_search_with_score_for_tenant\\('
+        file: backend/core/semantic_searcher.py
+      - command: rg
+        pattern: 'where={"tenant_id"'
+        file: backend/core/semantic_searcher.py
+
+  - id: knowledge_indexer_add_tenant_meta
+    title: Stamp tenant_id and tenant_slug on all chunks during indexing
+    files:
+      - backend/core/unified_retriever_old.py
+      - backend/core/knowledge_state_sync.py
+    search:
+      - "splitter_for_ext\("
+      - "vector_store.add_documents\("
+      - "chunks = splitter.split_documents\("
+    changes:
+      - update: "when splitting documents into chunks, inject metadata - tenant_id, tenant_slug, source, scope"
+      - update: "call add_documents_for_tenant(...) instead of add_documents(...)"
+    validations:
+      - command: rg
+        pattern: "tenant_id|tenant_slug|scope|source"
+        file: backend/core/unified_retriever_old.py
+      - command: rg
+        pattern: "add_documents_for_tenant\\("
+        file: backend/core/unified_retriever_old.py
+
+  - id: knowledge_retriever_tenant_filtered_search
+    title: Thread tenant_id through UnifiedRetriever and query handlers
+    files:
+      - backend/core/unified_retriever_old.py
+      - backend/dependencies.py
+      - backend/routes/queries.py
+    search:
+      - "similarity_search_with_score\("
+      - "get_retriever\("
+      - "def .*search\\(.*query"
+      - "request.state.tenant_id"
+    changes:
+      - update: ensure retriever/search APIs accept tenant_id and call similarity_search_with_score_for_tenant(...)
+      - update: in dependency wiring or route handlers, pass request.state.tenant_id (with fallback) into search calls
+    validations:
+      - command: rg
+        pattern: "tenant_id.*similarity_search_with_score_for_tenant\\(|similarity_search_with_score_for_tenant\\(.*tenant_id="
+        file: backend
+
+  - id: knowledge_db_add_tenant_id_rls
+    title: Add tenant_id to knowledge_files with RLS and explicit filters
+    files:
+      - backend/core/knowledge_index_db.py
+      - backend/db/versions/XXXX_add_tenant_to_knowledge_files.py
+    search:
+      - "INSERT INTO knowledge_files"
+      - "UPDATE knowledge_files"
+      - "FROM knowledge_files"
+    changes:
+      - add: Alembic migration to add tenant_id column, unique (tenant_id, path), index, and RLS policy
+      - update: all SELECT/INSERT/UPDATE to include tenant_id filters and parameters (`:fallback_tid`)
+    validations:
+      - command: rg
+        pattern: "FROM knowledge_files|INSERT INTO knowledge_files|UPDATE knowledge_files"
+        file: backend/core/knowledge_index_db.py
+      - command: rg
+        pattern: "tenant_id"
+        file: backend/core/knowledge_index_db.py
+
+  - id: knowledge_upload_endpoints
+    title: Admin upload endpoints (multipart and status), tenant-scoped
+    files:
+      - backend/routes/knowledge_uploads.py
+      - backend/core/app_factory.py
+    search:
+      - "APIRouter\\(tags=.*admin"
+      - "include_router\\(.*\\{tenant\\}/api/admin"
+    changes:
+      - add: POST /{tenant}/api/admin/knowledge/uploads (multipart) → saves under backend/knowledge/tenants/{slug}/documents/
+      - add: GET /{tenant}/api/admin/knowledge/uploads/status → returns DB status for recent uploads (tenant-scoped)
+      - add: include_router for new routes under tenant-prefixed admin API
+    validations:
+      - command: rg
+        pattern: "@router.post\\(\"/knowledge/uploads\"|/\\{tenant\\}/api/admin"
+        file: backend/routes/knowledge_uploads.py
+      - manual: upload under tenant A not visible under tenant B
+
+  - id: knowledge_sync_tenant_filter
+    title: Ensure sync/validation respects tenant scoping
+    files:
+      - backend/routes/knowledge_admin_sync.py
+      - backend/core/knowledge_state_sync.py
+    search:
+      - "scan_vector_store\\("
+      - "collection.get\\(include=\\[\\\"metadatas\\\"\\]"
+      - "update_vector_count\\("
+    changes:
+      - update: scan only tenant directories (or filter by tenant in DB), and when reading vector counts, use where={"tenant_id": tid}
+      - update: list endpoints return tenant-scoped results only
+    validations:
+      - command: rg
+        pattern: "where=\{\"tenant_id\"|tenant_id"
+        file: backend
+      - manual: consistency results reflect only tenant-visible files and vectors

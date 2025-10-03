@@ -1,0 +1,169 @@
+version: 1
+generated_for: multi-tenant-hardening
+
+tasks:
+  - id: backend_db_session_tenant_guc_hardening
+    title: Ensure tenant GUC set/reset on each DB session
+    description: |
+      Always set both SESSION and LOCAL `app.tenant_id` using the request's tenant context, with a safe fallback UUID,
+      and RESET it on teardown to avoid pool leakage.
+    files:
+      - backend/core/db_session.py
+    changes:
+      - add: "set SET app.tenant_id = :tid and SET LOCAL app.tenant_id = :tid on session open"
+      - add: "RESET app.tenant_id in finally block"
+    validations:
+      - command: rg
+        pattern: "SET LOCAL app.tenant_id"
+        file: backend/core/db_session.py
+      - command: rg
+        pattern: "RESET app.tenant_id"
+        file: backend/core/db_session.py
+
+  - id: backend_audit_logger_uuid_serialization
+    title: Make audit logger JSON-serializable; attach tenant context safely
+    files:
+      - backend/core/audit_logger.py
+    changes:
+      - replace: json.dumps(...) with json.dumps(..., default=str)
+      - ensure: tenant_id added as str(), not UUID object
+    validations:
+      - command: rg
+        pattern: "default=str"
+        file: backend/core/audit_logger.py
+
+  - id: backend_mount_tenant_prefixed_admin_routers
+    title: Mount admin routers under /{tenant}/api/admin
+    files:
+      - backend/core/app_factory.py
+    changes:
+      - add: include_router(..., prefix="/{tenant}/api/admin") for admin, knowledge, knowledge_admin_sync, performance, stats, queries, content, query_logs
+    validations:
+      - command: rg
+        pattern: '\{tenant\}/api/admin'
+        file: backend/core/app_factory.py
+
+  - id: backend_welcome_questions_admin_filter
+    title: Explicit tenant filter for admin welcome questions list
+    files:
+      - backend/routes/admin.py
+    search:
+      - "SELECT id, question_text, sort_order.*FROM welcome_questions"
+    changes:
+      - add: "WHERE tenant_id = COALESCE(NULLIF(current_setting('app.tenant_id', true), '')::uuid, CAST(:fallback_tid AS uuid))"
+    validations:
+      - curl: GET /{tenant}/api/admin/settings/welcome/questions returns only that tenant's data
+
+  - id: backend_welcome_questions_public_filter
+    title: Explicit tenant filter for public welcome questions
+    files:
+      - backend/routes/health.py
+    search:
+      - "FROM welcome_questions\n                WHERE is_active = true"
+    changes:
+      - add: "AND tenant_id = COALESCE(NULLIF(current_setting('app.tenant_id', true), '')::uuid, CAST(:fallback_tid AS uuid))"
+    validations:
+      - curl: GET /api/welcome-questions (with tenant middleware active) shows tenant-scoped questions
+
+  - id: backend_followup_endpoints_db_dependency
+    title: Use FastAPI DB dependency for follow-up endpoints
+    files:
+      - backend/routes/admin.py
+    changes:
+      - replace: "manual next(get_db_session(request)) with dependency param pg_session - Session = Depends(get_db_session)"
+    validations:
+      - command: rg
+        pattern: 'def .*followup.*\\(.*pg_session: Session = Depends\\(get_db_session\\)'
+        file: backend/routes/admin.py
+
+  - id: backend_followup_insert_tenant_fallback
+    title: COALESCE/NULLIF tenant fallback on follow-up inserts
+    files:
+      - backend/routes/admin.py
+    search:
+      - "INSERT INTO followup_categories"
+      - "INSERT INTO followup_questions"
+    changes:
+      - replace: "current_setting('app.tenant_id')::uuid with COALESCE(NULLIF(current_setting('app.tenant_id', true), '')::uuid, CAST(:fallback_tid AS uuid))"
+    validations:
+      - curl: POST /{tenant}/api/admin/settings/followup/categories works with/without GUC
+
+  - id: backend_followup_reads_explicit_tenant_filter
+    title: Explicit tenant filter on follow-up list endpoints
+    files:
+      - backend/routes/admin.py
+    search:
+      - "FROM followup_categories"
+      - "FROM followup_questions"
+      - "WHERE category_id = :id"
+    changes:
+      - add: "AND/WHERE tenant_id = COALESCE(NULLIF(current_setting('app.tenant_id', true), '')::uuid, CAST(:fallback_tid AS uuid))"
+    validations:
+      - curl: GET /{tenant}/api/admin/settings/followup/categories shows tenant-scoped data
+      - curl: GET /{tenant}/api/admin/settings/followup/questions shows tenant-scoped data
+
+  - id: backend_admin_settings_reads_explicit_tenant_filter
+    title: Explicit tenant filter for settings reads from admin_settings and history
+    files:
+      - backend/routes/admin.py
+    search:
+      - "FROM admin_settings"
+      - "FROM taxonomy_settings_history"
+    changes:
+      - add: "WHERE/AND tenant_id = COALESCE(NULLIF(current_setting('app.tenant_id', true), '')::uuid, CAST(:fallback_tid AS uuid))"
+    validations:
+      - curl: GET /{tenant}/api/admin/settings/* endpoints return correct tenant values
+
+  - id: frontend_router_tenant_prefix_and_redirect
+    title: Tenant-prefixed routes and root redirect
+    files:
+      - admin/frontend/src/router/index.js
+    changes:
+      - add: "'/:tenant' routes; guard to redirect '/' -> '/{first-tenant}/'"
+    validations:
+      - navigate: switching org updates URL to '/{slug}/...'
+
+  - id: frontend_api_interceptor_tenant_baseurl
+    title: Axios baseURL includes '/{tenant}/api/admin'
+    files:
+      - admin/frontend/src/services/api.js
+    changes:
+      - interceptor builds baseURL with current tenant slug
+    validations:
+      - network: requests go to '/{slug}/api/admin/...'
+
+  - id: frontend_reactivity_settings_views
+    title: Reload settings views on tenant change
+    files:
+      - admin/frontend/src/views/settings/CoreSettings.vue
+      - admin/frontend/src/views/settings/KnowledgeSettings.vue
+      - admin/frontend/src/views/settings/TaxonomySettings.vue
+      - admin/frontend/src/views/settings/ResponseSettings.vue
+      - admin/frontend/src/views/settings/SecuritySettings.vue
+      - admin/frontend/src/views/settings/FeatureSettings.vue
+    changes:
+      - add: import tenant store; watch `currentTenant`; call existing load method on change
+    validations:
+      - switch org: each view reloads values for the new tenant
+
+  - id: frontend_reactivity_welcome_and_followup
+    title: Reload welcome/follow-up data on tenant change (views + components)
+    files:
+      - admin/frontend/src/views/settings/WelcomeSettings.vue
+      - admin/frontend/src/views/settings/UXSettings.vue
+      - admin/frontend/src/views/settings/FollowupSettings.vue
+      - admin/frontend/src/components/FollowupAccordion.vue
+    changes:
+      - add: watch `currentTenant` and trigger existing loaders
+    validations:
+      - switch org: welcome questions, follow-up categories/questions reflect correct tenant
+
+  - id: frontend_reactivity_knowledge_sources
+    title: Reload knowledge sources on tenant change
+    files:
+      - admin/frontend/src/views/knowledge/SourcesView.vue
+    changes:
+      - add: watch `currentTenant` and call `loadSources()`
+    validations:
+      - switch org: knowledge files list matches selected tenant
+

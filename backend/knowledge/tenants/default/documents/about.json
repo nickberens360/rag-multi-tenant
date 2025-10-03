@@ -1,0 +1,29 @@
+{
+  "introduction": "Nick Berens is a passionate frontend developer with a strong focus on creating elegant, responsive, and accessible user interfaces. His work demonstrates a deep understanding of modern web technologies and a commitment to clean, maintainable code.",
+  "sections": [
+    {
+      "heading": "Illustration Work",
+      "content": "Nick is a talented illustrator who creates unique character designs and visual elements. His illustration portfolio includes a diverse range of characters and styles, such as 'Kinda Dumb Doug', animal-themed artwork, and playful concepts like 'Pool Shark'. His illustrations showcase a distinctive style that combines humor, creativity, and technical skill."
+    },
+    {
+      "heading": "Frontend Styleguide Development",
+      "content": "Nick has developed a comprehensive CSS framework and design system. His approach includes a well-structured CSS architecture, responsive design utilities, extensive utility classes, consistent naming conventions, and fluid typography. His styleguide shows a methodical approach to frontend development, creating systems that are both flexible and consistent."
+    },
+    {
+      "heading": "AI & Backend Development",
+      "content": "Nick is actively developing skills in AI and backend development. This includes experience with building AI-powered applications using LangChain, implementing retrieval-augmented generation (RAG) systems, creating robust backends with FastAPI, and working with vector databases."
+    },
+    {
+      "heading": "Technology Stack",
+      "content": "Nick's technical expertise spans multiple technologies: Frontend (Vue.js, Astro, HTML, CSS, JavaScript), Backend (Python, FastAPI), AI/ML (LangChain, Google Generative AI, Anthropic Claude), Design (Illustration, UI/UX, Design Systems), and Tools (Git, npm)."
+    },
+    {
+      "heading": "Personal Touch",
+      "content": "Nick combines technical expertise with creative vision, allowing him to bridge the gap between design and development. His work reflects a commitment to both aesthetic quality and technical excellence, creating digital experiences that are both beautiful and functional."
+    },
+    {
+      "heading": "Artistic Inspiration",
+      "content": "Nick draws inspiration from legendary cartoonists including Jim Davis, the creator of Garfield, Don Martin, the brilliant artist for Mad Magazine, and Bill Watterson, the creator of Calvin and Hobbes. He's also influenced by the classic Road Runner cartoons created by animation director Chuck Jones and writer Michael Maltese. His creative process involves studying character development, visual storytelling, and the art of combining humor with distinctive visual styles. The themes that consistently appear in his work include humor, character development, storytelling, and the timeless appeal of cartoon-style illustration."
+    }
+  ]
+}

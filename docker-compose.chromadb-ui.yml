@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  chromadb-ui:
+    image: ghcr.io/flanksource/chromadb-ui:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - CHROMA_URL=http://host.docker.internal:8001
+    network_mode: bridge

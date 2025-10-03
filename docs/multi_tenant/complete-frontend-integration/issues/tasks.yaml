@@ -1,0 +1,58 @@
+version: 1
+generated_for: complete-frontend-integration
+
+tasks:
+  - id: frontend_astro_tenant_routing
+    title: Implement tenant-aware routing in Astro pages
+    description: |
+      Add middleware-based tenant resolution (subdomain in prod, path prefix in dev),
+      tenant-aware root redirect, and link helpers so Astro pages consistently
+      reference the active tenant slug and generate tenant-prefixed links.
+    files:
+      - src/middleware.ts
+      - src/pages/index.astro
+      - src/pages/[tenant]/index.astro
+      - src/utils/tenant.ts
+      - .env.example
+    changes:
+      - add: src/middleware.ts with defineMiddleware(onRequest) that sets Astro.locals.tenantSlug
+      - update: src/pages/index.astro to redirect to /${PUBLIC_TENANT_DEFAULT_SLUG} when defined
+      - verify: src/pages/[tenant] pages read Astro.params.tenant and/or Astro.locals.tenantSlug
+      - add: src/utils/tenant.ts with tenantFromAstro(Astro) and tenantHref(Astro, path)
+      - add_env: PUBLIC_TENANT_DEFAULT_SLUG=acme (example)
+    validations:
+      - command: rg
+        pattern: 'defineMiddleware\(|onRequest'
+        file: src/middleware.ts
+      - command: rg
+        pattern: 'Astro\.params\.tenant|Astro\.locals\.tenantSlug'
+        file: src/pages/[tenant]
+      - command: rg
+        pattern: 'Astro\.redirect\(.*PUBLIC_TENANT_DEFAULT_SLUG|Astro\.redirect\(.*\$\{defaultSlug\}'
+        file: src/pages/index.astro
+      - navigate: switching between known slugs preserves the `/${slug}` prefix in all links
+
+  - id: frontend_tenant_resolution_error_boundaries
+    title: Add proper error boundaries for tenant resolution failures
+    description: |
+      Handle invalid or missing tenant slugs with friendly fallbacks. Add server-side guards in middleware
+      and per-page checks, plus a small Vue error boundary component for tenant-dependent UI.
+    files:
+      - src/middleware.ts
+      - src/pages/[tenant]/index.astro
+      - src/pages/tenant-not-found.astro
+      - src/components/TenantBoundary.vue
+    changes:
+      - update: src/middleware.ts short-circuits with 404 or redirect for invalid/unknown slugs under /[tenant]/
+      - add: top-of-file guard in src/pages/[tenant]/*.astro to redirect invalid `Astro.params.tenant`
+      - add: src/pages/tenant-not-found.astro with guidance and link to home/selector
+      - add: src/components/TenantBoundary.vue using onErrorCaptured to display fallback UI
+    validations:
+      - command: rg
+        pattern: 'Astro\.redirect\(|return new Response\(.*404'
+        file: src/middleware.ts
+      - command: rg
+        pattern: 'onErrorCaptured\(|errorCaptured'
+        file: src/components/TenantBoundary.vue
+      - manual: visiting /does-not-exist returns friendly tenant-not-found page (or 404 with clear message)
+

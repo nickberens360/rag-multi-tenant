@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/images/site-preview.png"
+  to = "/site-preview.png"
+  status = 301

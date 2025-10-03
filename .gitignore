@@ -1,0 +1,123 @@
+# build output
+dist/
+# generated types
+.astro/
+.BAK/
+*.bak
+*.BAK
+*.zip
+claude-exports/
+podman-commands.sh
+
+RAG_IMPROVEMENTS.md
+RAG_Improvement_Plan.md
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Coverage files
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# Generated data files
+public/unified_data.json
+
+# Log files
+backend/query_logs.json
+backend/.followup_cache.json
+backend/logs/query_logs.json
+*.log
+query_logs.json
+
+
+# ChromaDB database files and cache
+backend/.chroma/
+backend/.rag_cache/
+backend/.unified_chroma/
+test_chroma/
+
+# Local downloaded logs directory
+query-logs/
+
+# Claude Code conversation logs
+2025-*-caveat-the-messages-below-were-generated-by-the-u.txt
+
+# Cookie files (session data)
+cookies*.txt
+*cookies*.txt
+admin_cookies.txt
+
+# Database files (SQLite - should not be in version control)
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+backend/logs/*.db
+admin/*.db
+admin_monitoring.db
+rag_monitoring.db
+auth_sessions.db
+
+# Test artifacts and reports
+test-results/
+playwright-report/
+tests/e2e/test-results/
+admin/frontend/test-results/
+.pytest_cache/
+chroma_db/
+*.png
+*.webm
+*.json.auth
+results.json
+test-summary.json
+junit.xml

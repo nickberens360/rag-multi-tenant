@@ -1,0 +1,112 @@
+Setting Key	Setting Class	Field Name	Type	Default Value	Classification	Description
+followup_settings	FollowUpSettings	enabled	bool	true	admin-managed	Enable follow-up questions
+followup_settings	FollowUpSettings	service_type	str	static	admin-managed	Follow-up generation type (static/dynamic/contextual)
+followup_settings	FollowUpSettings	max_questions	int	1	admin-managed	Maximum follow-up questions
+followup_settings	FollowUpSettings	relevance_threshold	float	0.7	admin-managed	Relevance threshold (0.1-1.0)
+followup_settings	FollowUpSettings	include_technical	bool	true	admin-managed	Include technical questions
+followup_settings	FollowUpSettings	include_personal	bool	true	admin-managed	Include personal questions
+followup_settings	FollowUpSettings	include_creative	bool	true	admin-managed	Include creative questions
+followup_settings	FollowUpSettings	question_style	str	conversational	admin-managed	Question style (formal/conversational/exploratory)
+followup_settings	FollowUpSettings	custom_questions	Dict	{}	admin-managed	Custom questions by category
+response_settings	ResponseSettings	max_context_length	int	2000	admin-managed	Maximum context length in tokens
+response_settings	ResponseSettings	max_context_documents	int	3	admin-managed	Maximum number of context documents
+response_settings	ResponseSettings	context_fill_ratio	float	0.7	admin-managed	Context fill ratio
+response_settings	ResponseSettings	enable_caching	bool	true	admin-managed	Enable general caching
+response_settings	ResponseSettings	enable_response_caching	bool	true	admin-managed	Enable response caching
+response_settings	ResponseSettings	cache_ttl_seconds	int	3600	admin-managed	Cache TTL in seconds
+response_settings	ResponseSettings	response_cache_ttl_seconds	int	3600	admin-managed	Legacy response cache TTL
+response_settings	ResponseSettings	preferred_response_length	str	medium	admin-managed	Response length (brief/medium/detailed/comprehensive)
+response_settings	ResponseSettings	response_style	str	conversational	admin-managed	Response style (professional/conversational/technical/casual)
+response_settings	ResponseSettings	include_sources	bool	true	admin-managed	Include source citations
+response_settings	ResponseSettings	source_format	str	numbered	admin-managed	Source format (numbered/bulleted/inline)
+response_settings	ResponseSettings	max_sources	int	5	admin-managed	Maximum sources to include
+response_settings	ResponseSettings	enable_markdown	bool	true	admin-managed	Enable markdown formatting
+response_settings	ResponseSettings	enable_code_highlighting	bool	true	admin-managed	Enable code syntax highlighting
+response_settings	ResponseSettings	response_llm	str	claude	admin-managed	Response LLM (claude/gemini)
+response_settings	ResponseSettings	response_claude_model	str	claude-3-5-sonnet-20241022	admin-managed	Claude model for responses
+response_settings	ResponseSettings	response_gemini_model	str	gemini-1.5-flash	admin-managed	Gemini model for responses
+response_settings	ResponseSettings	enable_smart_selection	bool	true	admin-managed	Enable complexity-based model switching
+routing_settings	QueryRoutingSettings	classification_method	str	fast	admin-managed	Classification method (fast/llm)
+routing_settings	QueryRoutingSettings	confidence_threshold	float	0.7	admin-managed	Routing confidence threshold
+routing_settings	QueryRoutingSettings	enable_multi_route	bool	false	admin-managed	Enable multi-route queries
+routing_settings	QueryRoutingSettings	max_routes	int	2	admin-managed	Maximum number of routes
+routing_settings	QueryRoutingSettings	route_weights	Dict	{}	admin-managed	Custom route weights
+routing_settings	QueryRoutingSettings	default_route	str	comprehensive	admin-managed	Default route if uncertain
+feature_flags	FeatureFlags	enable_streaming	bool	true	admin-managed	Enable streaming responses
+feature_flags	FeatureFlags	enable_followup_questions	bool	true	admin-managed	Enable follow-up questions
+feature_flags	FeatureFlags	enable_source_citations	bool	true	admin-managed	Enable source citations
+feature_flags	FeatureFlags	enable_query_logging	bool	true	admin-managed	Enable query logging
+feature_flags	FeatureFlags	enable_admin_ui	bool	true	admin-managed	Enable admin UI
+feature_flags	FeatureFlags	enable_rate_limiting	bool	true	admin-managed	Enable rate limiting
+feature_flags	FeatureFlags	enable_maintenance_mode	bool	false	admin-managed	Enable maintenance mode
+feature_flags	FeatureFlags	maintenance_message	str	System maintenance in progress	admin-managed	Maintenance mode message
+feature_flags	FeatureFlags	enable_demo_mode	bool	false	admin-managed	Enable demo mode
+feature_flags	FeatureFlags	demo_mode_message	str	Demo mode - limited features	admin-managed	Demo mode message
+feature_flags	FeatureFlags	enable_api_keys	bool	false	admin-managed	Enable API key authentication
+feature_flags	FeatureFlags	enable_user_feedback	bool	true	admin-managed	Enable user feedback collection
+system_config_settings	SystemConfigurationSettings	primary_llm	str	claude	admin-managed	Primary LLM provider
+system_config_settings	SystemConfigurationSettings	claude_model	str	claude-3-5-sonnet-20241022	admin-managed	Claude model version
+system_config_settings	SystemConfigurationSettings	gemini_model	str	gemini-1.5-flash	admin-managed	Gemini model version
+system_config_settings	SystemConfigurationSettings	embedding_model	str	models/embedding-001	admin-managed	Embedding model
+system_config_settings	SystemConfigurationSettings	request_timeout	int	60	admin-managed	Request timeout in seconds
+system_config_settings	SystemConfigurationSettings	rate_limit	str	5/minute	admin-managed	Rate limit configuration
+system_config_settings	SystemConfigurationSettings	max_cache_size	int	1000	admin-managed	Maximum cache size
+system_config_settings	SystemConfigurationSettings	log_level	str	INFO	admin-managed	Logging level
+system_config_settings	SystemConfigurationSettings	enable_metrics	bool	true	admin-managed	Enable metrics collection
+system_config_settings	SystemConfigurationSettings	metrics_interval	int	60	admin-managed	Metrics collection interval
+security_settings	SecuritySettings	enable_ip_filtering	bool	false	admin-managed	Enable IP filtering
+security_settings	SecuritySettings	allowed_ips	List[str]	[]	admin-managed	Allowed IP addresses
+security_settings	SecuritySettings	blocked_ips	List[str]	[]	admin-managed	Blocked IP addresses
+security_settings	SecuritySettings	excluded_ips	List[str]	[]	admin-managed	IPs excluded from anonymization
+security_settings	SecuritySettings	enable_auth	bool	true	admin-managed	Enable authentication
+security_settings	SecuritySettings	session_timeout	int	3600	admin-managed	Session timeout in seconds
+security_settings	SecuritySettings	max_failed_attempts	int	5	admin-managed	Max failed login attempts
+security_settings	SecuritySettings	lockout_duration	int	900	admin-managed	Account lockout duration in seconds
+security_settings	SecuritySettings	enable_csrf_protection	bool	true	admin-managed	Enable CSRF protection
+security_settings	SecuritySettings	enable_xss_protection	bool	true	admin-managed	Enable XSS protection
+security_settings	SecuritySettings	anonymize_ips	bool	true	admin-managed	Enable IP anonymization
+security_settings	SecuritySettings	enable_security_headers	bool	true	admin-managed	Enable security headers
+rag_config_settings	RagConfigurationSettings	rag_use_mmr	bool	false	admin-managed	Use Maximum Marginal Relevance
+rag_config_settings	RagConfigurationSettings	rag_use_heading_splitter	bool	false	admin-managed	Use heading-based text splitting
+rag_config_settings	RagConfigurationSettings	rag_enable_delete	bool	false	admin-managed	Enable document deletion
+rag_config_settings	RagConfigurationSettings	rag_safe_delete	bool	true	admin-managed	Enable safe deletion mode
+rag_config_settings	RagConfigurationSettings	rag_score_threshold	float	0.2	admin-managed	RAG score threshold
+rag_config_settings	RagConfigurationSettings	rag_mmr_k	int	4	admin-managed	MMR k parameter
+rag_config_settings	RagConfigurationSettings	rag_mmr_fetch_k	int	20	admin-managed	MMR fetch_k parameter
+rag_config_settings	RagConfigurationSettings	rag_mmr_lambda_mult	float	0.5	admin-managed	MMR lambda multiplier
+rag_config_settings	RagConfigurationSettings	chunk_size	int	1000	admin-managed	Text chunk size
+rag_config_settings	RagConfigurationSettings	chunk_overlap	int	100	admin-managed	Text chunk overlap
+rag_config_settings	RagConfigurationSettings	enable_semantic_cache	bool	false	admin-managed	Enable semantic caching
+rag_config_settings	RagConfigurationSettings	semantic_cache_threshold	float	0.95	admin-managed	Semantic cache similarity threshold
+core_settings	CoreSettings	app_name	str	Nick Berens Portfolio	admin-managed	Application name
+core_settings	CoreSettings	app_version	str	2.2.0	admin-managed	Application version
+core_settings	CoreSettings	app_description	str	Portfolio and Knowledge Base	admin-managed	Application description
+core_settings	CoreSettings	contact_email	str	admin@nickberens.me	admin-managed	Contact email address
+core_settings	CoreSettings	support_url	str	https://nickberens.me/support	admin-managed	Support URL
+core_settings	CoreSettings	documentation_url	str	https://docs.nickberens.me	admin-managed	Documentation URL
+core_settings	CoreSettings	timezone	str	UTC	admin-managed	Application timezone
+core_settings	CoreSettings	language	str	en	admin-managed	Default language
+ux_settings	UXSettings	theme	str	light	admin-managed	UI theme (light/dark/auto)
+ux_settings	UXSettings	primary_color	str	#2563eb	admin-managed	Primary brand color
+ux_settings	UXSettings	secondary_color	str	#64748b	admin-managed	Secondary brand color
+ux_settings	UXSettings	font_family	str	Inter	admin-managed	Font family
+ux_settings	UXSettings	show_typing_indicator	bool	true	admin-managed	Show typing indicator
+ux_settings	UXSettings	typing_indicator_delay	int	500	admin-managed	Typing indicator delay in ms
+ux_settings	UXSettings	enable_animations	bool	true	admin-managed	Enable UI animations
+ux_settings	UXSettings	animation_speed	str	normal	admin-managed	Animation speed (slow/normal/fast)
+ux_settings	UXSettings	compact_mode	bool	false	admin-managed	Enable compact UI mode
+search_retrieval_settings	SearchRetrievalSettings	semantic_similarity_threshold	float	0.55	admin-managed	Semantic similarity threshold (0-1)
+search_retrieval_settings	SearchRetrievalSettings	max_search_results	int	15	admin-managed	Maximum search results
+search_retrieval_settings	SearchRetrievalSettings	search_algorithm	str	hybrid	admin-managed	Search algorithm (semantic/keyword/hybrid)
+search_retrieval_settings	SearchRetrievalSettings	enable_reranking	bool	false	admin-managed	Enable result reranking
+search_retrieval_settings	SearchRetrievalSettings	reranking_model	str	default	admin-managed	Reranking model
+search_retrieval_settings	SearchRetrievalSettings	boost_recent_content	bool	true	admin-managed	Boost recent content in results
+search_retrieval_settings	SearchRetrievalSettings	recency_weight	float	0.2	admin-managed	Weight for content recency
+search_retrieval_settings	SearchRetrievalSettings	enable_fuzzy_search	bool	true	admin-managed	Enable fuzzy search
+search_retrieval_settings	SearchRetrievalSettings	fuzzy_threshold	float	0.7	admin-managed	Fuzzy search threshold
+knowledge_settings	KnowledgeSettings	index_on_startup	bool	true	admin-managed	Index content on startup
+knowledge_settings	KnowledgeSettings	background_sync_interval_seconds	int	0	admin-managed	Background sync interval (0=disabled)
+knowledge_settings	KnowledgeSettings	auto_reindex_deltas	bool	false	admin-managed	Auto-reindex on file changes
+knowledge_settings	KnowledgeSettings	enable_heterogeneity_fallback	bool	false	admin-managed	Enable heterogeneity fallback
+knowledge_settings	KnowledgeSettings	heterogeneity_fallback_include	List[str]	[]	admin-managed	Patterns for heterogeneity fallback
+knowledge_settings	KnowledgeSettings	index_directories	List[str]	["backend/knowledge", "public"]	admin-managed	Directories to index

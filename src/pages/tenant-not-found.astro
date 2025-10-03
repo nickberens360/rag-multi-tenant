@@ -1,0 +1,74 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const defaultSlug = import.meta.env.PUBLIC_TENANT_DEFAULT_SLUG || 'default';
+const requestedTenant = Astro.url.searchParams.get('tenant') || 'unknown';
+---
+
+<Layout
+    title="Organization Not Found"
+    description="The organization you're looking for doesn't exist"
+>
+  <div style="
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 2rem;
+  ">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">🔍</div>
+
+    <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">Organization Not Found</h1>
+
+    <p style="font-size: 1.25rem; color: #666; max-width: 600px; margin-bottom: 2rem;">
+      The organization <strong>"{requestedTenant}"</strong> doesn't exist or has been removed.
+    </p>
+
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+      <a
+          href={`/${defaultSlug}`}
+          style="
+          display: inline-block;
+          padding: 0.75rem 1.5rem;
+          background: #0066cc;
+          color: white;
+          text-decoration: none;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          transition: background 0.2s;
+        "
+          onmouseover="this.style.background='#0052a3'"
+          onmouseout="this.style.background='#0066cc'"
+      >
+        Go to Default Organization
+      </a>
+
+      <a
+          href="/"
+          style="
+          display: inline-block;
+          padding: 0.75rem 1.5rem;
+          background: #f0f0f0;
+          color: #333;
+          text-decoration: none;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          transition: background 0.2s;
+        "
+          onmouseover="this.style.background='#e0e0e0'"
+          onmouseout="this.style.background='#f0f0f0'"
+      >
+        Go to Home
+      </a>
+    </div>
+
+    <div style="margin-top: 3rem; padding: 1rem; background: #f8f9fa; border-radius: 0.5rem; max-width: 500px;">
+      <p style="font-size: 0.875rem; color: #666; margin: 0;">
+        <strong>Need help?</strong> If you believe this is an error, please contact support at
+        <a href="mailto:nickberens360@gmail.com" style="color: #0066cc;">nickberens360@gmail.com</a>
+      </p>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,80 @@
+version: 2
+context:
+  mode: greenfield
+  db: postgres
+  orm: sqlalchemy_core_or_orm
+  rls: true
+  tenancy: subdomain_or_path_prefix
+
+tasks:
+  - id: p1_env_alembic
+    title: Configure env + Alembic
+    depends_on: []
+    files_to_touch: [".env", ".env.example", "backend/db/alembic.ini", "backend/db/env.py"]
+    add_env:
+      - key: DATABASE_URL
+        example: postgresql+psycopg://user:password@localhost:5432/appdb
+      - key: DEFAULT_TENANT_ID
+        example: 00000000-0000-0000-0000-000000000001
+    validation:
+      - command: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+
+  - id: p1_initial_schema
+    title: Initial schema + RLS (single revision)
+    depends_on: [p1_env_alembic]
+    files_to_touch:
+      - backend/db/versions/init_multi_tenant_schema.py
+    validation:
+      - command: alembic upgrade head
+      - command: psql "$DATABASE_URL" -c "SET LOCAL app.tenant_id = '$DEFAULT_TENANT_ID'; SELECT COUNT(*) FROM tenants;"
+
+  - id: p2_backend_middleware
+    title: Tenant middleware (subdomain > path prefix)
+    depends_on: [p1_initial_schema]
+    files_to_touch:
+      - backend/core/tenant_middleware.py
+      - backend/core/app_factory.py
+    validation:
+      - description: request.state.tenant_id resolves from host/path
+
+  - id: p2_backend_session
+    title: SQLAlchemy engine + per-request session (SET LOCAL)
+    depends_on: [p2_backend_middleware]
+    files_to_touch:
+      - backend/core/db.py
+      - backend/core/db_session.py
+      - backend/main.py
+    validation:
+      - description: Every request starts a transaction and sets app.tenant_id
+
+  - id: p2_tenant_apis
+    title: Tenants/memberships/invitations endpoints (MVP)
+    depends_on: [p2_backend_session]
+    files_to_touch:
+      - backend/routes/tenants.py
+      - backend/routes/invitations.py
+      - backend/core/membership_service.py
+    validation:
+      - description: Create tenant, add member, list user tenants; accept invite
+
+  - id: p3_frontend
+    title: Frontend tenant awareness + org switcher
+    depends_on: [p2_tenant_apis]
+    files_to_touch:
+      - src/composables/useTenant.ts
+      - src/components/OrgSwitcher.vue
+      - src/pages/[tenant]/index.astro
+    validation:
+      - description: Switching tenants changes data context
+
+  - id: p3_observability_tests
+    title: Observability + RLS and routing tests
+    depends_on: [p2_backend_session]
+    files_to_touch:
+      - backend/core/audit_logger.py
+      - tests/integration/test_tenancy_rls.py
+      - tests/integration/test_tenant_resolution.py
+    validation:
+      - description: Logs include tenant_id; integration tests pass
+    rollback:
+      - description: N/A

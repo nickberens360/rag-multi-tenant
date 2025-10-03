@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API URL Test</title>
+</head>
+<body>
+    <h1>Multi-Tenant API URL Test</h1>
+    <p>Current path: <span id="path"></span></p>
+    <p>Expected API URL: <span id="apiUrl"></span></p>
+    <button onclick="testQuery()">Test Query</button>
+    <pre id="result"></pre>
+
+    <script type="module">
+        // Replicate the getApiUrl() logic from useChatAPI.js
+        const getApiUrl = () => {
+            const isDev = window.location.hostname === 'localhost';
+            const baseUrl = isDev ? 'http://localhost:8000' : 'https://nickberens-astro-production.up.railway.app';
+
+            // Extract tenant slug from current page path
+            const pathMatch = window.location.pathname.match(/^\/([^\/]+)\//);
+            const tenantSlug = pathMatch ? pathMatch[1] : null;
+
+            // In dev, use path-based tenant routing
+            if (isDev && tenantSlug && tenantSlug !== 'api') {
+                return `${baseUrl}/${tenantSlug}/api`;
+            }
+
+            return isDev ? `${baseUrl}/api` : baseUrl;
+        };
+
+        document.getElementById('path').textContent = window.location.pathname;
+        document.getElementById('apiUrl').textContent = getApiUrl();
+
+        window.testQuery = async () => {
+            const apiUrl = getApiUrl();
+            try {
+                const response = await fetch(`${apiUrl}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: "Tell me about Nick's experience with RAG systems",
+                        chat_history: [],
+                        preferred_model: 'claude'
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let result = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    result += decoder.decode(value, { stream: true });
+                }
+
+                document.getElementById('result').textContent = result;
+            } catch (error) {
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+            }
+        };
+    </script>
+</body>
+</html>
