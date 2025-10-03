@@ -28,7 +28,7 @@ class AdminAPI {
         let originBase = ''
         if (import.meta.env.DEV) {
           // In dev, always call backend directly to avoid Vite proxy mismatches with tenant prefixes
-          originBase = 'http://localhost:8000'
+          originBase = 'http://localhost:8001'
         } else if (import.meta.env.VITE_API_BASE_URL) {
           // In prod, accept absolute or relative; strip trailing /api/admin if present
           const base = String(import.meta.env.VITE_API_BASE_URL)

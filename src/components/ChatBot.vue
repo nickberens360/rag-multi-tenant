@@ -110,7 +110,7 @@ export default {
         // Use the same API URL logic as other endpoints
         const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
         const apiUrl = isDev
-          ? 'http://localhost:8000'
+          ? 'http://localhost:8001'
           : import.meta.env.PUBLIC_API_URL || 'https://nickberens-astro-production.up.railway.app';
 
         const response = await fetchWithTenant(`${apiUrl}/default-model`);

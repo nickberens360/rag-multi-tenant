@@ -7,7 +7,7 @@ import { useTenantAPI } from './useTenantAPI.js';
 const getApiUrl = () => {
   const isDev = import.meta.env.DEV || window.location.hostname === 'localhost';
   return isDev
-    ? 'http://localhost:8000'
+    ? 'http://localhost:8001'
     : import.meta.env.PUBLIC_API_URL || 'https://nickberens-astro-production.up.railway.app';
 };
 

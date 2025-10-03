@@ -27,7 +27,7 @@ export default defineConfig({
     // This keeps cookies same-site and avoids CORS pitfalls
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
         secure: false,
       }

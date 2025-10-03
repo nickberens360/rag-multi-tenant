@@ -91,13 +91,16 @@ class UnifiedRetriever:
                         per_tenant[(tid, tenant_slug)].append(doc)
                         logger.debug(f"Stamped tenant metadata: {tenant_slug} ({tid[:8]}...) on {src_str[:60]}")
                     else:
-                        # If we cannot resolve ID, treat as shared to avoid locking content out
-                        logger.warning(
-                            f"No tenant ID resolved for slug '{tenant_slug}', adding to shared: {src_str[:60]}"
+                        # SECURITY: NEVER fall back to shared for tenant-scoped documents!
+                        # This prevents cross-tenant data leakage.
+                        logger.error(
+                            f"SECURITY VIOLATION PREVENTED: Tenant slug '{tenant_slug}' not found in database. "
+                            f"Document REJECTED to prevent data leakage: {src_str}"
                         )
-                        shared_docs.append(doc)
+                        # Skip this document entirely - do NOT index it
+                        continue
                 else:
-                    # No tenant context; do not mark as shared to avoid cross-tenant visibility
+                    # Only truly shared documents (no /tenants/ in path) go here
                     logger.debug(f"No tenant slug found in path, adding to shared: {src_str[:60]}")
                     shared_docs.append(doc)
 
@@ -274,8 +277,14 @@ class UnifiedRetriever:
                             chunks, tenant_id=tenant_id, tenant_slug=tenant_slug
                         )
                     else:
-                        # Fall back to shared add if cannot resolve id
-                        self.semantic_searcher.add_documents(chunks)
+                        # SECURITY: NEVER fall back to shared for tenant-scoped documents!
+                        logger.error(
+                            f"SECURITY VIOLATION PREVENTED: Tenant slug '{tenant_slug}' found in path but not in database. "
+                            f"Document REJECTED to prevent data leakage: {file_path}"
+                        )
+                        raise ValueError(
+                            f"Tenant '{tenant_slug}' not found in database. Cannot index tenant document without valid tenant ID."
+                        )
                 else:
                     # No tenant context; index without shared scope
                     self.semantic_searcher.add_documents(chunks)
