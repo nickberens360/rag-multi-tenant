@@ -4,22 +4,19 @@
     :class="`theme-${theme}`"
   >
     <div class="welcome-content">
-      <pre class="welcome-content__ascii">███╗   ██╗██╗ ██████╗██╗  ██╗    █████╗ ██╗
-████╗  ██║██║██╔════╝██║ ██╔╝   ██╔══██╗██║
-██╔██╗ ██║██║██║     █████╔╝    ███████║██║
-██║╚██╗██║██║██║     ██╔═██╗    ██╔══██║██║
-██║ ╚████║██║╚██████╗██║  ██╗██╗██║  ██║██║
-╚═╝  ╚═══╝╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝</pre>
       <h2>Welcome to nick.AI</h2>
       <p>Try asking me some questions like:</p>
-      <ul class="example-prompts">
+      <ul
+        v-if="welcomeQuestions.length"
+        class="example-prompts"
+      >
         <li v-if="loading" class="loading-placeholder">
           <span class="prompt-icon">...</span>
           Loading questions...
         </li>
-        <li 
+        <li
           v-else
-          v-for="question in welcomeQuestions" 
+          v-for="question in welcomeQuestions"
           :key="question.id"
           @click="selectPrompt(question.question_text)"
         >
@@ -64,7 +61,7 @@ export default {
 
         const response = await fetchWithTenant(`${apiUrl}/welcome-questions`)
         const data = await response.json()
-        
+
         // Sort questions by sort_order and assign to reactive ref
         welcomeQuestions.value = (data.questions || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
       } catch (error) {

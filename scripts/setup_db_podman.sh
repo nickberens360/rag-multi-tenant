@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # One-shot DB setup for local dev with Podman:
-# - Creates network 'nickberens-network' if missing
+# - Creates network 'rag-multi-tenant-network' if missing
 # - Starts Postgres container named 'postgres' on that network (or starts it if exists)
 # - Waits until DB is ready
 # - Creates .venv, installs backend deps (incl. Alembic)
@@ -19,11 +19,11 @@ need_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "[db:setup] ERROR: Missin
 need_cmd podman
 
 # Create network if not present
-if ! podman network inspect nickberens-network >/dev/null 2>&1; then
-  echo "[db:setup] Creating podman network 'nickberens-network'"
-  podman network create nickberens-network >/dev/null
+if ! podman network inspect rag-multi-tenant-network >/dev/null 2>&1; then
+  echo "[db:setup] Creating podman network 'rag-multi-tenant-network'"
+  podman network create rag-multi-tenant-network >/dev/null
 else
-  echo "[db:setup] Network 'nickberens-network' already exists"
+  echo "[db:setup] Network 'rag-multi-tenant-network' already exists"
 fi
 
 # Start or run the postgres container
@@ -38,7 +38,7 @@ if podman inspect postgres >/dev/null 2>&1; then
 else
   echo "[db:setup] Running new 'postgres' container"
   podman run -d --name postgres \
-    --network nickberens-network \
+    --network rag-multi-tenant-network \
     -p 5432:5432 \
     -e POSTGRES_DB=app_db \
     -e POSTGRES_USER=postgres \
