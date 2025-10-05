@@ -318,7 +318,7 @@ The auto-discovery system is designed to be extensible. Key files:
     "content": "RAG systems combine retrieval and generation...",
     "tags": ["AI", "RAG", "Tutorial"],
     "date": "2024-01-15",
-    "author": "Nick Berens"
+    "author": "Example Author"
   }
 ]
 ```

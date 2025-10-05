@@ -1,0 +1,146 @@
+version: 1
+feature: document_metadata_user_defined_with_llm_fallback
+summary: >-
+  Add user-defined document metadata (content_type, tags) with LLM fallback,
+  tenant-scoped taxonomy, provenance, background inference, and retrieval semantics
+  that respect manual-over-inferred precedence.
+
+defaults:
+  tenant_scoped: true
+  rls: true
+
+env_flags:
+  - key: ENABLE_DOC_METADATA
+    example: "true"
+    description: Feature flag to enable metadata UI + API
+  - key: METADATA_INFERENCE_MODEL
+    example: "claude-3-haiku"
+    description: Model used for asynchronous metadata inference
+
+tasks:
+  - id: dm_schema
+    title: DB schema for manual/inferred metadata
+    depends_on: []
+    files_to_touch:
+      - backend/db/versions/xxxx_add_document_metadata.py
+    database_changes:
+      - table: knowledge_files
+        add_columns:
+          - manual_content_type TEXT NULL
+          - manual_tags JSONB NULL DEFAULT '[]'
+          - inferred_content_type TEXT NULL
+          - inferred_tags JSONB NULL DEFAULT '[]'
+          - inferred_confidence REAL NULL
+          - metadata_provenance TEXT NOT NULL DEFAULT 'inferred'
+          - metadata_updated_by UUID NULL
+          - metadata_updated_at TIMESTAMPTZ NULL
+          - metadata_version INT NOT NULL DEFAULT 1
+      - create_table: tenant_taxonomy
+        columns:
+          - tenant_id UUID NOT NULL
+          - key TEXT NOT NULL
+          - label TEXT NOT NULL
+          - synonyms JSONB NULL
+          - active BOOLEAN NOT NULL DEFAULT TRUE
+        constraints:
+          - primary_key: [tenant_id, key]
+    validation:
+      - command: alembic upgrade head
+      - command: psql "$DATABASE_URL" -c "\d knowledge_files"
+
+  - id: dm_backend_endpoints
+    title: Backend endpoints for metadata CRUD + inference trigger
+    depends_on: [dm_schema]
+    files_to_touch:
+      - backend/routes/knowledge_uploads.py
+      - backend/routes/knowledge.py
+      - backend/routes/taxonomy.py
+      - backend/core/metadata_inference.py
+      - backend/core/knowledge_index_db.py
+    api_endpoints:
+      - method: POST
+        path: /api/admin/knowledge/uploads
+        notes: Accept optional metadata[content_type], metadata[tags]
+      - method: PUT
+        path: /api/admin/knowledge/sources/{source_path}
+        notes: Accept manual_content_type, manual_tags; set provenance=manual
+      - method: POST
+        path: /api/admin/knowledge/metadata/infer
+        notes: Trigger batch (re)inference; supports dry_run, paths, limit
+      - method: GET/PUT
+        path: /api/admin/settings/taxonomy
+        notes: Manage tenant vocabulary
+    validation:
+      - command: http GET :8001/{tenant}/api/admin/knowledge/sources "Cookie:$ADMIN_AUTH"  # returns effective_* fields
+      - description: Upload without metadata → status shows inferred after background job completes
+
+  - id: dm_inference_worker
+    title: Background inference worker and queue
+    depends_on: [dm_backend_endpoints]
+    files_to_touch:
+      - backend/core/metadata_inference.py
+      - backend/main.py
+    notes: Use BackgroundTasks or a simple in-process queue for MVP; log confidence; map to tenant taxonomy
+    validation:
+      - description: Upload file without metadata → inferred_content_type populated, confidence set
+
+  - id: dm_propagation
+    title: Propagate effective metadata to chunk indexing
+    depends_on: [dm_inference_worker]
+    files_to_touch:
+      - backend/core/unified_retriever.py
+      - backend/core/semantic_searcher.py
+    notes: On manual update or completed inference, mark file for reindex; stamp chunk metadata with effective values
+    validation:
+      - description: Reindex file and verify chunk metadata contains effective_content_type and tags
+
+  - id: dm_frontend_upload
+    title: Upload UI supports metadata input and suggestions
+    depends_on: [dm_backend_endpoints]
+    files_to_touch:
+      - admin/frontend/src/views/knowledge/SourcesView.vue
+      - admin/frontend/src/services/api.js
+      - admin/frontend/src/stores/tenant.js
+    notes: Multi-select for tags, select for content type (tenant taxonomy); optional Suggest button
+    validation:
+      - description: Upload with metadata → appears immediately as manual; without → suggestion toast later
+
+  - id: dm_frontend_edit
+    title: Source editor supports manual overrides with provenance
+    depends_on: [dm_frontend_upload]
+    files_to_touch:
+      - admin/frontend/src/views/knowledge/SourcesView.vue
+      - admin/frontend/src/components/knowledge/SourceMetadataForm.vue
+    validation:
+      - description: Edit source; provenance shows manual; reindex triggered; chips update
+
+  - id: dm_retrieval_policy
+    title: Retrieval uses manual labels for filters; inferred as soft signal
+    depends_on: [dm_propagation]
+    files_to_touch:
+      - backend/core/content_router.py
+      - backend/core/semantic_searcher.py
+    notes: Add optional strict filter flag; default inferred → rerank only
+    validation:
+      - description: Queries with content_type filter respect manual labels; inferred only biases order
+
+  - id: dm_audit_telemetry
+    title: Audit + telemetry for metadata changes
+    depends_on: [dm_frontend_edit]
+    files_to_touch:
+      - backend/core/audit_logger.py
+      - backend/routes/knowledge.py
+    validation:
+      - description: Manual edits emit audit events; metrics count inference runs and overrides
+
+  - id: dm_docs_tests
+    title: Docs and tests
+    depends_on: [dm_retrieval_policy]
+    files_to_touch:
+      - docs/multi_tenant/document_metadata_plan.md
+      - tests/integration/test_document_metadata.py
+      - tests/e2e/test_document_metadata_flow.py
+    validation:
+      - command: pytest -q tests/integration/test_document_metadata.py
+      - command: pytest -q tests/e2e/test_document_metadata_flow.py
+

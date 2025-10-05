@@ -169,24 +169,47 @@ class StartupContentClassifier:
         return list(detected_topics) if detected_topics else ["general"]
 
     def _merge_topics(self, llm_topics: List[str], heuristic_topics: List[str]) -> List[str]:
-        """Merge LLM and heuristic topics, prioritizing LLM accuracy."""
-        # Start with LLM topics (higher quality)
-        merged = set(llm_topics) if llm_topics else set()
+        """Merge LLM and heuristic topics, canonicalize, and de-noise."""
+        allowed = {
+            "technical",
+            "experience",
+            "skills",
+            "about",
+            "creative",
+            "project",
+            "documentation",
+            "general",
+        }
+        # Synonym canonicalization
+        canon_map = {
+            "code": "technical",
+            "personal": "about",
+            "doc": "documentation",
+            "docs": "documentation",
+            "document": "documentation",
+        }
 
-        # Add heuristic topics that don't conflict
-        for topic in heuristic_topics:
-            if topic not in merged:
-                merged.add(topic)
+        def _canonize(items: List[str]) -> List[str]:
+            out = []
+            for t in items or []:
+                tnorm = (t or "").strip().lower()
+                if not tnorm:
+                    continue
+                tnorm = canon_map.get(tnorm, tnorm)
+                if tnorm in allowed:
+                    out.append(tnorm)
+            return out
 
-        # Ensure we have at least one topic
+        merged = set(_canonize(llm_topics))
+        for topic in _canonize(heuristic_topics):
+            merged.add(topic)
+
         if not merged:
             merged = {"general"}
         else:
-            # If we have specific topics, drop overly-generic label
             if "general" in merged and len(merged) > 1:
                 merged.discard("general")
 
-        # Convert to sorted list for consistency
         return sorted(list(merged))
 
     def _extract_enhanced_keywords(self, content: str, topics: List[str]) -> str:

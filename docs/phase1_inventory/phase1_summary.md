@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a complete inventory of all configuration settings in the Nick Berens Portfolio application as of Phase 1 of the settings migration project. The application uses a hybrid configuration system with three layers:
+This document provides a complete inventory of all configuration settings in the Multi-Tenant RAG application as of Phase 1 of the settings migration project. The application uses a hybrid configuration system with three layers:
 
 1. **Environment Variables** - For secrets and deployment-specific values
 2. **Database Settings** - Admin-manageable settings via the admin UI

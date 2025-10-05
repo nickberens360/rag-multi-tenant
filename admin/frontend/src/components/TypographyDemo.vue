@@ -206,7 +206,7 @@
                 Recent Query
               </div>
               <div class="code-block bg-surface-variant pa-3 rounded text-body-2">
-                What is Nick's experience with Vue.js development?
+                What is the organization's experience with Vue.js development?
               </div>
             </div>
           </v-card>

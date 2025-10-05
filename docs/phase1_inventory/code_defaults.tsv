@@ -55,7 +55,7 @@ config_v2.py	DEFAULT_TOTAL_TOPICS_DEFAULT	8	int	admin-managed	Default total topi
 config_v2.py	DEFAULT_MAX_CONTEXT_LENGTH	2000	int	admin-managed	Default max context length
 config_v2.py	MAX_CONTEXT_DOCUMENTS	3	int	admin-managed	Max context documents
 config_v2.py	CONTEXT_FILL_RATIO	0.7	float	admin-managed	Context fill ratio
-config_v2.py	APP_TITLE	Nick Berens Portfolio API	str	admin-managed	Application title
+config_v2.py	APP_TITLE	Multi-Tenant RAG API	str	admin-managed	Application title
 config_v2.py	APP_DESCRIPTION	Intelligent API for Portfolio	str	admin-managed	Application description
 config_v2.py	APP_VERSION	2.2.0	str	admin-managed	Application version
 performance_config.py	ENABLE_FAST_QUERY_CLASSIFIER	true	bool	admin-managed	Enable fast query classifier

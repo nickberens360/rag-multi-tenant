@@ -136,7 +136,7 @@ function example() {
   <div class="metric-label">Total Queries</div>
   
   <!-- Query content -->
-  <div class="query-text">What is Nick's experience with Vue.js?</div>
+  <div class="query-text">What is the organization's experience with Vue.js?</div>
   <div class="response-text">Based on the knowledge base...</div>
 </template>
 ```
@@ -189,10 +189,10 @@ function example() {
 ```vue
 <template>
   <div class="query-text bg-surface-variant pa-3 rounded">
-    What is Nick's development philosophy?
+    What is the organization's development philosophy?
   </div>
   <div class="response-text mt-2">
-    Based on the knowledge base, Nick believes in...
+    Based on the knowledge base, the organization emphasizes...
   </div>
 </template>
 ```

@@ -166,10 +166,30 @@ export const useTenantStore = defineStore('tenant', () => {
     try {
       console.debug(`Loading knowledge sources for tenant: ${currentTenant.value.slug}`)
 
-      // NO tenant parameter - context already set via setCurrentTenant()
-      const data = await adminAPI.getKnowledgeSources()
+      // Use tenant-scoped files status so newly uploaded (discovered) files appear
+      // This returns { files: [...], total }
+      const data = await adminAPI.getKnowledgeFilesStatus({ limit: 1000 })
 
-      tenantData.value.knowledgeSources = data.sources || []
+      // Normalize to the shape expected by the UI (path, status, content_type, chunk_count, display_path)
+      const files = Array.isArray(data?.files) ? data.files : []
+      tenantData.value.knowledgeSources = files.map(f => {
+        const path = f.path || ''
+        // Derive a friendlier display path when possible
+        let displayPath = path
+        if (displayPath.startsWith('backend/knowledge/')) {
+          displayPath = displayPath.replace('backend/knowledge/', '')
+        } else if (displayPath.startsWith('public/')) {
+          displayPath = displayPath.replace('public/', '')
+        }
+        return {
+          path,
+          status: f.status || 'unknown',
+          // content_type not tracked in metadata DB; default to 'unknown'
+          content_type: f.content_type || 'unknown',
+          chunk_count: f.chunk_count ?? 0,
+          display_path: displayPath,
+        }
+      })
 
       console.debug(`✅ Loaded ${tenantData.value.knowledgeSources.length} knowledge sources`)
     } catch (err) {

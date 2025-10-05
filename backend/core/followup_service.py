@@ -31,7 +31,7 @@ class FollowUpService:
             "personal": [
                 "Tell me about your experience",
                 "What's your background?",
-                "How can I contact Nick?",
+                "How can I contact the organization?",
                 "What motivates you?",
                 "Tell me about your journey",
             ],
@@ -51,7 +51,7 @@ class FollowUpService:
             "What inspires your artwork?",
             "What technologies do you work with?",
             "What's your development philosophy?",
-            "How can I contact Nick?",
+            "How can I contact the organization?",
         )
 
         # Track current position for sequential ordering
@@ -241,27 +241,11 @@ class FollowUpService:
                     if category_name in settings.custom_questions:
                         questions.extend(settings.custom_questions[category_name])
 
-        # Final fallback: hardcoded question pools (backward compatibility only)
+        # If tenant has no questions configured, return empty list (no hardcoded fallbacks)
         if not questions:
-            logger.warning(
-                "No database or legacy questions found, falling back to hardcoded question pools (consider running migration)"
+            logger.info(
+                "No follow-up questions configured for this tenant. Returning empty list (tenant must add questions via admin dashboard)."
             )
-            # Use already sorted active_categories for consistent ordering
-            for category in active_categories:
-                category_name = category.get("name", "")
-
-                # Check if this category type should be included and exists in hardcoded pools
-                if category_name in self.question_pools:
-                    if (
-                        (category_name == "technical" and settings.include_technical)
-                        or (category_name == "personal" and settings.include_personal)
-                        or (category_name == "creative" and settings.include_creative)
-                    ):
-                        questions.extend(self.question_pools[category_name])
-
-        # If still no questions available, use defaults
-        if not questions:
-            questions = list(self.default_questions)
 
         logger.debug(
             f"FollowUpService: Built question pool with {len(questions)} questions from {len(active_categories)} categories"
@@ -371,8 +355,8 @@ class FollowUpService:
 
         except Exception as e:
             logger.error(f"Error generating follow-ups: {e}", exc_info=True)
-            # Fallback to simple static behavior
-            return [self.default_questions[self.current_index % len(self.default_questions)]]
+            # Return empty list on error - tenant should configure questions via admin dashboard
+            return []
 
     def reload_settings(self) -> None:
         """Force reload of settings from database."""

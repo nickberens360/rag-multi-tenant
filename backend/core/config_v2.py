@@ -569,15 +569,42 @@ class AppConfig:
                     logger.warning(f"Invalid IP address in EXCLUDED_IPS: {ip}")
         return excluded_ips
 
-    # App Metadata
-    APP_TITLE = "Nick Berens Portfolio API"
-    APP_DESCRIPTION = """
-Intelligent API for Nick Berens' Portfolio and Knowledge Base
+    # App Metadata (configurable via environment variables for multi-tenant deployments)
+    APP_TITLE = os.getenv("APP_TITLE", "Multi-Tenant RAG API")
+    APP_DESCRIPTION = os.getenv(
+        "APP_DESCRIPTION",
+        """
+Multi-Tenant AI-Powered Knowledge Base API
 
-This API provides AI-powered access to Nick's professional experience, skills, projects, and creative work using advanced RAG (Retrieval-Augmented Generation) technology.
+This API provides intelligent access to organizational knowledge using advanced
+RAG (Retrieval-Augmented Generation) technology.
 
-Built with ❤️ by Nick Berens using FastAPI, Vue.js, and modern AI technologies.
-    """
+## Features
+
+- **Multi-Tenant Architecture**: Complete data isolation per organization
+- **AI-Powered Search**: Semantic search with contextual understanding
+- **Customizable Assistants**: Each tenant can configure their AI assistant
+- **Real-Time Streaming**: Live response generation
+- **Comprehensive Analytics**: Query logs, performance metrics, and insights
+
+## Technology Stack
+
+- **Backend**: FastAPI (Python 3.11+)
+- **Frontend**: Astro, Vue.js 3, Vuetify 3
+- **AI**: Claude (Anthropic), Gemini (Google)
+- **Database**: PostgreSQL with Row-Level Security (RLS)
+
+## Multi-Tenant Support
+
+Each tenant has isolated:
+- Knowledge base and documents
+- Query logs and analytics
+- AI assistant customization
+- API keys and settings
+
+Built with modern AI and web technologies.
+        """,
+    )
     APP_VERSION = "2.2.0"
 
     # Properties that need to be set at module load time for backward compatibility

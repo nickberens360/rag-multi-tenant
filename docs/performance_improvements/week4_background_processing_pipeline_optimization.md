@@ -1117,7 +1117,7 @@ class ParallelQueryProcessor:
                 if "skills" in query_profile.topics:
                     return f"Based on the available information: {context[:200]}..."
                 elif "experience" in query_profile.topics:
-                    return f"Nick's experience includes: {context[:200]}..."
+                    return f"The organization's experience includes: {context[:200]}..."
                 else:
                     return f"Here's what I found: {context[:200]}..."
             

@@ -278,8 +278,8 @@ class SettingsManifest:
             "system_name": FieldDescriptor(
                 name="system_name",
                 field_type=SettingType.STRING,
-                default_value="Nick Berens AI Assistant",
-                description="Display name for the AI assistant",
+                default_value="AI Assistant",
+                description="Display name for the AI assistant (defaults to '{Organization} Assistant' if not set)",
                 validation_rules={"min_length": 1, "max_length": 100},
             ),
             "version": FieldDescriptor(

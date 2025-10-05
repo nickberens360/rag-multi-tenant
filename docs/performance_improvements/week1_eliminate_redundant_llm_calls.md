@@ -289,7 +289,7 @@ def test_query_analysis_performance():
     handler = SmartQueryHandler(...)
     
     start = time.time()
-    result = handler.analyze_query_fast("What is Nick's experience with Vue.js?")
+    result = handler.analyze_query_fast("What is the organization's experience with Vue.js?")
     duration = time.time() - start
     
     assert duration < 0.1  # Less than 100ms
@@ -300,7 +300,7 @@ def test_end_to_end_performance():
     """Test complete query performance improvement."""
     # Target: < 3 seconds total (vs previous 6-8 seconds)
     start = time.time()
-    response = await query_endpoint({"question": "Tell me about Nick's skills"})
+    response = await query_endpoint({"question": "Tell me about the organization's skills"})
     duration = time.time() - start
     
     assert duration < 3.0  # 60%+ improvement target
@@ -314,7 +314,7 @@ def test_topic_classification_accuracy():
     classifier = FastQueryClassifier()
     
     test_cases = [
-        ("What experience does Nick have?", ["experience"]),
+        ("What experience does the organization have?", ["experience"]),
         ("Show me creative illustrations", ["creative"]),
         ("What programming languages does he know?", ["skills", "technical"]),
     ]

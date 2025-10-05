@@ -268,8 +268,19 @@ class AdminAPI {
     return await this.client.get(`/knowledge/files/${encodeURIComponent(filename)}/content`)
   }
 
-  async uploadKnowledgeFiles(formData) {
-    // Supports new tenant-scoped upload endpoint
+  async uploadKnowledgeFiles(formData, options = {}) {
+    // Supports new tenant-scoped upload endpoint with optional immediate indexing
+    const { indexNow = true } = options || {}
+    try {
+      // Avoid duplicating field if already present
+      if (!(formData instanceof FormData) || !formData.has) {
+        // In unusual cases (tests), formData may be a plain object
+      } else if (!formData.has('index_now')) {
+        formData.append('index_now', indexNow ? 'true' : 'false')
+      }
+    } catch (_) {
+      // Non-fatal; proceed without index_now
+    }
     return await this.client.post('/knowledge/uploads', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'

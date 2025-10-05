@@ -589,7 +589,7 @@ async def test_async_search_performance():
     searcher = SemanticSearcher(embeddings, persist_dir)
     
     queries = [
-        "What is Nick's experience?",
+        "What is the organization's experience?",
         "Show me creative work", 
         "Technical skills",
         "Vue.js projects"

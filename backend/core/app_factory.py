@@ -197,16 +197,21 @@ def create_app(lifespan: Optional[Callable[[FastAPI], AsyncContextManager]] = No
         FastAPI: Configured FastAPI application
     """
     # Create FastAPI app with enhanced metadata and documentation
+    # Build contact metadata safely: omit URL if not provided to avoid OpenAPI validation errors
+    _contact: dict[str, str] = {
+        "name": os.getenv("API_CONTACT_NAME", "System Administrator"),
+        "email": os.getenv("API_CONTACT_EMAIL", "admin@localhost"),
+    }
+    _contact_url = os.getenv("API_CONTACT_URL")
+    if _contact_url and _contact_url.strip():
+        _contact["url"] = _contact_url.strip()
+
     app = FastAPI(
         title=AppConfig.APP_TITLE,
         description=AppConfig.APP_DESCRIPTION,
         version=AppConfig.APP_VERSION,
         lifespan=lifespan,
-        contact={
-            "name": "Nick Berens",
-            "url": "https://nickberens.me",
-            "email": "hello@nickberens.me",
-        },
+        contact=_contact,
         license_info={
             "name": "MIT",
         },
@@ -217,7 +222,7 @@ def create_app(lifespan: Optional[Callable[[FastAPI], AsyncContextManager]] = No
             },
             {
                 "name": "Query",
-                "description": "AI-powered query endpoints for retrieving information from Nick's knowledge base. Uses Claude and advanced RAG (Retrieval-Augmented Generation) to provide intelligent responses.",
+                "description": "AI-powered query endpoints for retrieving information from the knowledge base. Uses Claude and advanced RAG (Retrieval-Augmented Generation) to provide intelligent responses with multi-tenant data isolation.",
             },
             {
                 "name": "Public API",
@@ -250,7 +255,6 @@ def create_app(lifespan: Optional[Callable[[FastAPI], AsyncContextManager]] = No
 
     # Add tenant middleware (if enabled)
     # Note: Always import tenant_middleware to ensure it's available, but only register if enabled
-    import os
 
     from .tenant_middleware import tenant_middleware
 

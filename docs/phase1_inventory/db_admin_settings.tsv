@@ -78,12 +78,12 @@ rag_config_settings	RagConfigurationSettings	chunk_size	int	1000	admin-managed	T
 rag_config_settings	RagConfigurationSettings	chunk_overlap	int	100	admin-managed	Text chunk overlap
 rag_config_settings	RagConfigurationSettings	enable_semantic_cache	bool	false	admin-managed	Enable semantic caching
 rag_config_settings	RagConfigurationSettings	semantic_cache_threshold	float	0.95	admin-managed	Semantic cache similarity threshold
-core_settings	CoreSettings	app_name	str	Nick Berens Portfolio	admin-managed	Application name
+core_settings	CoreSettings	app_name	str	Multi-Tenant RAG	admin-managed	Application name
 core_settings	CoreSettings	app_version	str	2.2.0	admin-managed	Application version
 core_settings	CoreSettings	app_description	str	Portfolio and Knowledge Base	admin-managed	Application description
-core_settings	CoreSettings	contact_email	str	admin@nickberens.me	admin-managed	Contact email address
-core_settings	CoreSettings	support_url	str	https://nickberens.me/support	admin-managed	Support URL
-core_settings	CoreSettings	documentation_url	str	https://docs.nickberens.me	admin-managed	Documentation URL
+core_settings	CoreSettings	contact_email	str	admin@example.com	admin-managed	Contact email address
+core_settings	CoreSettings	support_url	str	https://example.com/support	admin-managed	Support URL
+core_settings	CoreSettings	documentation_url	str	https://docs.example.com	admin-managed	Documentation URL
 core_settings	CoreSettings	timezone	str	UTC	admin-managed	Application timezone
 core_settings	CoreSettings	language	str	en	admin-managed	Default language
 ux_settings	UXSettings	theme	str	light	admin-managed	UI theme (light/dark/auto)

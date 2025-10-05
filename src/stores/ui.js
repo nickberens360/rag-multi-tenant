@@ -8,17 +8,17 @@ export const blogItems = atom([]);
 
 // Navigation items store
 export const navItems = atom([
-  { text: 'nick.AI', url: '/nick-ai' },
+  /*{ text: 'nick.AI', url: '/nick-ai' },
   { text: 'Illustrations', url: '/illustrations' },
-  { text: 'Atomic Docs', url: '/atomic-docs' },
+  { text: 'Atomic Docs', url: '/atomic-docs' },*/
   { text: 'Blog', url: '/blog' },
-  {
+  /*{
     text: 'Fonts',
     url: '#',
     hasDropdown: true,
     dropdownItems: [] // Will be populated from fontItems
-  },
-  { text: 'Resume', url: '/resume' },
+  },*/
+  /*{ text: 'Resume', url: '/resume' },
  // { text: 'Contact', url: '/#contact' },
   {
     text: 'GitHub',
@@ -26,7 +26,7 @@ export const navItems = atom([
     isExternal: true,
     icon: ['fab', 'github'],
     ariaLabel: 'GitHub Profile'
-  }
+  }*/
 ]);
 
 // Helper function to update blog items (keeping for potential future use)

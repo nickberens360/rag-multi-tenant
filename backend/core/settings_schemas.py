@@ -1072,7 +1072,7 @@ class CoreSettings:
     """Core system configuration and LLM model settings."""
 
     # System identification
-    system_name: str = "Nick Berens AI Assistant"
+    system_name: str = "AI Assistant"
     version: str = "2.0"
 
     # LLM Configuration

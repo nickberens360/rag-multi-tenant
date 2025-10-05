@@ -34,7 +34,7 @@ class TestFollowupService:
             "What inspires your artwork?",
             "What technologies do you work with?",
             "What's your development philosophy?",
-            "How can I contact Nick?",
+            "How can I contact the organization?",
         )
         assert service.default_questions == expected_questions
 

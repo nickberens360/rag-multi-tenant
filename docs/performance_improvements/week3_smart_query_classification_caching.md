@@ -623,28 +623,28 @@ class SmartCachePrewarmer:
         
         # Pre-warming strategies
         self.common_queries = [
-            "What is Nick's experience?",
-            "What skills does Nick have?",
-            "Tell me about Nick's background",
+            "What is the organization's experience?",
+            "What skills does the organization have?",
+            "Tell me about the organization's background",
             "Show me illustrations",
-            "What projects has Nick worked on?",
-            "What programming languages does Nick know?",
-            "What is Nick's experience with Vue.js?",
-            "What companies has Nick worked for?",
+            "What projects has the organization worked on?",
+            "What programming languages does the team know?",
+            "What is the organization's experience with Vue.js?",
+            "What companies has the team worked with?",
         ]
         
         self.seasonal_queries = {
             "hiring_season": [
-                "What is Nick's resume?",
-                "What is Nick's professional experience?", 
-                "What technologies does Nick use?",
-                "Nick's previous roles and responsibilities",
+                "What is the team's resume overview?",
+                "What is the organization's professional experience?", 
+                "What technologies does the organization use?",
+                "Previous roles and responsibilities",
             ],
             "portfolio_review": [
-                "Show me Nick's creative work",
-                "What projects has Nick built?",
-                "Examples of Nick's coding projects",
-                "Nick's design and illustration portfolio",
+                "Show me creative work",
+                "What projects has the team built?",
+                "Examples of coding projects",
+                "Design and illustration portfolio",
             ]
         }
     
@@ -975,10 +975,10 @@ def test_query_classification_speed():
     classifier = IntelligentQueryClassifier()
     
     queries = [
-        "What is Nick's experience?",
+        "What is the organization's experience?",
         "Show me creative illustrations",
-        "How does Nick approach software architecture?",
-        "List Nick's technical skills"
+        "How does the organization approach software architecture?",
+        "List the organization's technical skills"
     ]
     
     start = time.time()

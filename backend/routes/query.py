@@ -54,26 +54,26 @@ _rate_limit_decorator = (lambda f: f) if _testing else (lambda f: f)
     tags=["Query"],
     summary="AI-Powered Knowledge Query",
     description="""
-            **Primary endpoint for querying Nick's knowledge base using AI.**
-            
-            This endpoint uses advanced RAG (Retrieval-Augmented Generation) with Claude to provide intelligent responses about:
-            - Nick's professional experience and skills
-            - Technical projects and implementations  
-            - Creative work and illustrations
-            - Personal interests and background
-            
-            **Features:**
-            - Smart query routing (determines if you're asking about illustrations vs. text content)
+            Primary endpoint for querying a tenant's knowledge base using AI.
+
+            This endpoint uses advanced RAG (Retrieval-Augmented Generation) to provide intelligent,
+            tenant-aware responses about:
+            - Organizational background, experience, and skills
+            - Technical projects and implementations
+            - Creative work and illustrations (when enabled)
+
+            Features:
+            - Smart query routing (illustrations vs. text content)
             - Streaming responses for real-time AI generation
             - Rate limiting protection
             - Comprehensive input validation and sanitization
             - Fallback handling for LLM rate limits
-            
-            **Rate Limits:** {rate_limit} requests per minute per IP
+
+            Rate Limits: {rate_limit} requests per minute per IP
             """.format(
         rate_limit=AppConfig.get_rate_limit().split("/")[0]
     ),
-    response_description="Intelligent response based on Nick's knowledge base, with optional illustration results",
+    response_description="Intelligent response based on the tenant's knowledge base, with optional illustration results",
     responses={
         200: {
             "description": "Successful response with AI-generated answer",
@@ -81,42 +81,41 @@ _rate_limit_decorator = (lambda f: f) if _testing else (lambda f: f)
                 "application/json": {
                     "examples": {
                         "text_query": {
-                            "summary": "Text-based question about Nick's experience",
+                            "summary": "Text-based question about the organization's experience",
                             "value": {
                                 "answer": (
-                                    "Nick Berens is a Senior Software Engineer with expertise in full-stack "
-                                    "development, particularly in Vue.js, Python, and API design. He has worked "
-                                    "with companies like Calendly, where he focused on scaling user experiences "
-                                    "and implementing robust backend systems."
+                                    "Based on the organization's knowledge base, the team has deep expertise in "
+                                    "full-stack development, particularly with Vue.js, Python/FastAPI, and API design. "
+                                    "Recent projects focus on scalable user experiences and robust backend systems."
                                 ),
                                 "images": [],
                                 "model_used": "claude-3-5-sonnet-20241022",
                                 "followup_questions": [
-                                    "What specific projects has Nick worked on at Calendly?",
-                                    "What technologies does Nick prefer for frontend development?",
+                                    "What recent projects has the organization delivered?",
+                                    "What technologies are preferred for frontend development?",
                                 ],
                             },
                         },
                         "illustration_query": {
-                            "summary": "Query requesting Nick's artwork/illustrations",
+                            "summary": "Query requesting illustrations from the knowledge base",
                             "value": {
-                                "answer": "Here are some of my illustrations:",
+                                "answer": "Here are some illustrations:",
                                 "images": [
                                     {
-                                        "file": "flying-robot.png",
-                                        "title": "Flying Robot",
-                                        "tags": ["robot", "flying", "futuristic"],
+                                        "file": "illustration-1.png",
+                                        "title": "Concept Sketch",
+                                        "tags": ["concept", "sketch", "design"],
                                     },
                                     {
-                                        "file": "dope-goose.jpg",
-                                        "title": "Dope Goose",
-                                        "tags": ["animal", "bird", "cartoon"],
+                                        "file": "illustration-2.jpg",
+                                        "title": "Character Study",
+                                        "tags": ["character", "art", "portfolio"],
                                     },
                                 ],
                                 "model_used": "claude-3-5-sonnet-20241022",
                                 "followup_questions": [
-                                    "Can you show me more animal illustrations?",
-                                    "What tools do you use for digital art?",
+                                    "Can you show more examples from this category?",
+                                    "What tools are used for digital art?",
                                 ],
                             },
                         },

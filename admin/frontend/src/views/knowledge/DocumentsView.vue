@@ -402,11 +402,17 @@ export default {
       const contentTypeStr = metadata.content_type || metadata.content_types
       if (!contentTypeStr || contentTypeStr === 'unknown') return ['unknown']
 
-      const types = contentTypeStr.split(',')
-        .map(t => t.trim())
-        .filter(t => t && t !== 'unknown' && !t.includes('based on'))
-        .slice(0, 4)  // Show max 4 types
-      return [...new Set(types)]  // Remove duplicates
+      // Canonicalize to our allowed set to avoid noisy labels (e.g., 'code' -> 'technical')
+      const allowed = new Set(['technical', 'experience', 'skills', 'about', 'creative', 'project', 'documentation', 'general'])
+      const canonMap = { code: 'technical', personal: 'about', doc: 'documentation', docs: 'documentation', document: 'documentation' }
+
+      const types = contentTypeStr
+        .split(',')
+        .map(t => (t || '').trim().toLowerCase())
+        .map(t => canonMap[t] || t)
+        .filter(t => t && t !== 'unknown' && allowed.has(t) && !t.includes('based on'))
+        .slice(0, 4)
+      return [...new Set(types)]
     }
 
     const getContentTypeColor = (type) => {

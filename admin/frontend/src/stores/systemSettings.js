@@ -4,7 +4,7 @@ import { systemSettingsService } from '@/services/settings/systemSettingsService
 
 export const useSystemSettingsStore = defineStore('systemSettings', () => {
   const settings = ref({
-    app_name: 'Nick Berens AI Assistant',
+    app_name: 'AI Assistant',
     app_version: '2.0.0',
     api_base_url: import.meta.env.VITE_API_BASE_URL || '/api/admin',
     enable_debug_mode: false,

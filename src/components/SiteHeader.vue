@@ -204,7 +204,7 @@
         :class="variant === 'pod' ? 'pod' : ''"
         :style="variant === 'pod' ? headerStyles : {}"
       >
-        <a
+<!--        <a
           href="/nick-ai"
           class="ai-icon"
           @click="handleAIClick($event)"
@@ -215,7 +215,7 @@
             style="width: 34px;"
             :class="{ 'icon-bounce': aiIconBouncing }"
           />
-        </a>
+        </a>-->
         <button
           class="site-header__hamburger "
           :class="[{ 'is-active': isMobileMenuOpen }, { 'icon-bounce': mobileNavItemClicked }]"

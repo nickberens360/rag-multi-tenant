@@ -38,14 +38,14 @@ class Query(BaseModel):
         ...,
         min_length=1,
         max_length=SecurityValidator.MAX_QUERY_LENGTH,
-        description="The user's question or request about Nick's experience, skills, projects, or illustrations",
+        description="The user's question or request about the organization's experience, skills, projects, or content",
         examples=[
-            "What is Nick's professional background?",
-            "Tell me about Nick's experience with Vue.js",
-            "Show me some of Nick's illustrations",
-            "What projects has Nick worked on recently?",
-            "Can you show me animal artwork?",
-            "What technologies does Nick use for backend development?",
+            "What is the professional background?",
+            "Tell me about experience with Vue.js and Python",
+            "What projects have been completed recently?",
+            "What technologies are used for backend development?",
+            "Can you show me some creative work?",
+            "What services does the organization offer?",
         ],
     )
     chat_history: List[Message] = Field(
@@ -73,20 +73,23 @@ class Query(BaseModel):
         "json_schema_extra": {
             "examples": [
                 {
-                    "question": "What is Nick's background in software engineering?",
+                    "question": "What is the background in software engineering?",
                     "chat_history": [],
                     "preferred_model": None,
                 },
                 {
-                    "question": "Can you show me some creative illustrations?",
+                    "question": "Can you show me some recent projects?",
                     "chat_history": [],
                     "preferred_model": "claude",
                 },
                 {
-                    "question": "Tell me more about the Vue.js projects you mentioned",
+                    "question": "Tell me more about the technologies mentioned",
                     "chat_history": [
-                        {"sender": "user", "text": "What technologies do you specialize in?"},
-                        {"sender": "assistant", "text": "I specialize in Vue.js, Python, and full-stack development."},
+                        {"sender": "user", "text": "What technologies are used?"},
+                        {
+                            "sender": "assistant",
+                            "text": "The stack includes Vue.js, Python/FastAPI, and modern deployment tools.",
+                        },
                     ],
                     "preferred_model": "claude",
                 },

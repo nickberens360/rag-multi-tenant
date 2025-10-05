@@ -4,7 +4,7 @@ import { coreSettingsService } from '@/services/settings/coreSettingsService'
 
 export const useCoreSettingsStore = defineStore('coreSettings', () => {
   const settings = ref({
-    system_name: 'Nick Berens AI Assistant',
+    system_name: 'AI Assistant',
     version: '2.0',
     default_model: 'claude-3-sonnet',
     anthropic_api_key_configured: false,

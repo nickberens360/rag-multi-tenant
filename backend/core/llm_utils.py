@@ -95,26 +95,32 @@ def extract_topics_with_llm(llm: BaseLanguageModel, text: str) -> List[str]:
     """
     output_parser = CommaSeparatedListOutputParser()
 
+    # Restrict topics to a canonical set to avoid noisy labels like "code" or "personal".
+    # If the text contains code or technical content, use "technical".
+    # Do NOT invent new topics outside the allowed list.
     prompt = PromptTemplate(
         template="""
 You are an expert at analyzing text and extracting key topics.
-Analyze the following text chunk and extract a comma-separated list of 1-5 main topics that describe its content.
-The topics should be concise and relevant.
-Choose from the following list if applicable, but you can also generate new topics if needed:
-- technical
-- experience
-- skills
-- about
-- creative
-- project
-- personal
-- code
-- documentation
+Analyze the following text chunk and extract a comma-separated list of 1-3 main topics that describe its content.
+The topics must be chosen ONLY from this allowed list:
+  - technical
+  - experience
+  - skills
+  - about
+  - creative
+  - project
+  - documentation
+  - general
+
+Rules:
+  - If the text contains code or technical material, use "technical" (do NOT output "code").
+  - If the text is personal profile/biography, use "about" (do NOT output "personal").
+  - Never invent or add topics outside the list.
 
 Text chunk:
 "{text}"
 
-Your comma-separated list of topics:
+Your comma-separated list of topics (from the allowed list only):
 """,
         input_variables=["text"],
     )

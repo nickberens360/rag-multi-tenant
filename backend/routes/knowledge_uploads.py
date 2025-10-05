@@ -12,7 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, BackgroundTasks, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -73,10 +73,58 @@ def ensure_tenant_directory(tenant_slug: str) -> Path:
     return tenant_dir
 
 
+def _reindex_file_task(path: str, tenant_id: Optional[str], retriever: object) -> None:
+    """Background task to reindex a single file and update DB status."""
+    try:
+        from ..core.knowledge_index_db import KnowledgeIndexDB
+
+        db = KnowledgeIndexDB()
+
+        ok = False
+        try:
+            # Run reindex via unified retriever
+            ok = bool(getattr(retriever, "reindex_file")(path))  # type: ignore[misc]
+        except Exception as e:  # pragma: no cover - background task
+            logger.error(f"Background reindex failed for {path}: {e}")
+            ok = False
+
+        if ok:
+            # Best-effort compute hash and vector_count
+            try:
+                from pathlib import Path as _P
+
+                file_hash = getattr(retriever, "content_indexer").compute_file_hash(_P(path))  # type: ignore[attr-defined]
+            except Exception:
+                file_hash = None
+
+            try:
+                vcount = getattr(retriever, "semantic_searcher").get_count(where={"source": path})  # type: ignore[attr-defined]
+            except Exception:
+                vcount = None
+
+            try:
+                db.update_indexed(path, file_hash=file_hash, chunk_count=None, vector_count=vcount, tenant_id=tenant_id)
+            except Exception:
+                # Non-fatal
+                pass
+            logger.info(f"Background reindex complete: {path}")
+        else:
+            try:
+                db.record_error(path, error="Reindex failed", tenant_id=tenant_id)
+            except Exception:
+                pass
+            logger.warning(f"Background reindex did not complete for: {path}")
+    except Exception as e:  # pragma: no cover
+        logger.error(f"Background reindex task crashed for {path}: {e}")
+
+
 @router.post("/knowledge/uploads")
 async def upload_knowledge_files(
+    request: Request,
+    background_tasks: BackgroundTasks,
     files: List[UploadFile] = File(...),
     path_prefix: Optional[str] = Form(None),
+    index_now: bool = Form(True),
     tenant_context: Dict = Depends(get_tenant_context),
 ) -> JSONResponse:
     """
@@ -136,7 +184,7 @@ async def upload_knowledge_files(
             with open(full_path, "wb") as f:
                 f.write(content)
 
-            # Record in database
+            # Record in database (discovered)
             db.upsert_file(path=str(full_path), size=len(content), tenant_id=tenant_id, scope="tenant")
 
             uploaded_files.append(
@@ -151,6 +199,14 @@ async def upload_knowledge_files(
             )
 
             logger.info(f"Uploaded file {file.filename} for tenant {tenant_slug} at {full_path}")
+
+            # Trigger background reindex if requested
+            try:
+                if index_now and hasattr(request.app.state, "unified_retriever") and request.app.state.unified_retriever is not None:
+                    background_tasks.add_task(_reindex_file_task, str(full_path), tenant_id, request.app.state.unified_retriever)
+                    logger.info(f"Queued background reindex for {full_path}")
+            except Exception as e:
+                logger.warning(f"Failed to queue background reindex for {full_path}: {e}")
 
         except HTTPException:
             raise

@@ -1,18 +1,18 @@
-# Nick Berens - Portfolio Website
+# Multi-Tenant RAG Application
 
-Personal website with intelligent RAG-powered AI assistant. Built with FastAPI backend and Astro frontend, featuring a **unified smart retriever system** that automatically discovers and indexes content without configuration.
+Multi-tenant knowledge base with an intelligent RAG-powered AI assistant. Built with a FastAPI backend and Astro frontend, featuring a **unified smart retriever system** that automatically discovers and indexes content without configuration and supports tenant-aware prompts and responses.
 
 ## Features
 
-* **🤖 AI Chatbot ("nick.AI")**: RAG system with auto-discovery, dual LLM support (Claude/Gemini), streaming responses, and smart follow-ups
+* **🤖 AI Chatbot**: RAG system with auto-discovery, dual LLM support (Claude/Gemini), streaming responses, and smart follow-ups
 
 * **📊 Admin Dashboard**: Vue.js + Vuetify interface with real-time analytics, settings management, and secure authentication
 
-* **🖥️ Interactive Terminal**: Draggable terminal for site navigation with command-line interface
+* **🖥️ Interactive Terminal**: Draggable terminal for site navigation with command-line interface (optional)
 
 * **🎨 Smart Gallery**: Illustrations with fuzzy search and parallax effects
 
-* **📝 Blog & Resume**: MDX-powered blog and dynamic resume with PDF download
+* **📝 Blog**: MDX-powered blog support
 
 ---
 
@@ -24,8 +24,8 @@ Personal website with intelligent RAG-powered AI assistant. Built with FastAPI b
 * **Nanostores** - Global state management
 
 ### Backend
-* **FastAPI** - Async API with unified smart retriever
-* **SQLite** - Query logging and admin data
+* **FastAPI** - Async API with unified smart retriever and tenant-aware prompts
+* **PostgreSQL** - Tenant-scoped query logging and admin data (RLS)
 * **LangChain** - RAG pipeline with smart routing
 * **ChromaDB** - Vector database for semantic search
 
@@ -49,7 +49,7 @@ Personal website with intelligent RAG-powered AI assistant. Built with FastAPI b
 │   └── stores/            # Nanostores state
 ├── backend/               # FastAPI backend
 │   ├── core/              # Business logic (unified_retriever, config)
-│   ├── knowledge/         # Auto-indexed content (.md, .pdf, .json)
+│   ├── knowledge/         # Tenant-scoped content (.md, .pdf, .json)
 │   ├── routes/            # API endpoints
 │   └── logs/              # SQLite databases
 ├── admin/frontend/        # Vue.js admin dashboard
@@ -73,9 +73,9 @@ pytest -m unit           # Run tests
 
 ## Smart Retriever (Zero Configuration!)
 
-**Just drop content files and go!**
+**Drop content files per tenant and go!**
 
-1. **Add content**: Drop `.md`, `.pdf`, `.json` files in `backend/knowledge/` or `public/`
+1. **Add content**: Drop `.md`, `.pdf`, `.json` files in `backend/knowledge/tenants/{tenant}/documents/` or `public/`
 2. **Restart backend**: Content automatically indexed and searchable
 3. **No config needed**: System auto-detects content types and routes queries intelligently
 
@@ -133,4 +133,4 @@ Notes
 
 ## License
 
-This project is a personal portfolio and is not licensed for reuse.
+This project is provided as a template and is not licensed for reuse.

@@ -44,6 +44,24 @@
       </div>
     </div>
 
+    <!-- Global Indexing Progress (visible even after dialog closes) -->
+    <div v-if="indexingProgress.active" class="mb-4">
+      <v-card variant="outlined">
+        <v-card-text>
+          <div class="d-flex align-center justify-space-between mb-2">
+            <span class="text-body-2">Re-indexing uploaded files...</span>
+            <span class="text-body-2">{{ indexingProgress.completed }}/{{ indexingProgress.total }}</span>
+          </div>
+          <v-progress-linear
+            :model-value="indexingProgress.total ? (indexingProgress.completed / indexingProgress.total) * 100 : 0"
+            color="primary"
+            height="8"
+            rounded
+          />
+        </v-card-text>
+      </v-card>
+    </div>
+
     <v-card>
       <v-card-title class="text-h6 d-flex align-center">
         <v-icon class="me-2">
@@ -358,6 +376,8 @@
               </v-card-text>
             </v-card>
           </div>
+
+          
         </v-card-text>
 
         <v-card-actions>
@@ -394,7 +414,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useTenantStore } from '@/stores/tenant'
 import { adminAPI } from '@/services/api'
@@ -446,6 +466,15 @@ const uploadProgress = ref({
   total: 0
 })
 
+// Indexing progress state (post-upload background tasks)
+const indexingProgress = ref({
+  active: false,
+  completed: 0,
+  total: 0
+})
+let indexingPollTimer = null
+let indexingPaths = []
+
 const sourceHeaders = [
   { title: 'Source Path', key: 'path', sortable: true },
   { title: 'Status', key: 'status', sortable: true },
@@ -483,13 +512,17 @@ const uploadFiles = async () => {
   }
   uploadResults.value = []
 
+  // Close the dialog immediately after the user clicks Upload
+  showUploadDialog.value = false
+
   try {
     const formData = new FormData()
     for (const file of selectedFiles.value) {
       formData.append('files', file)
     }
 
-    const response = await adminAPI.uploadKnowledgeFiles(formData)
+    // Request immediate indexing on upload
+    const response = await adminAPI.uploadKnowledgeFiles(formData, { indexNow: true })
 
     // Normalize new response shape from tenant-aware endpoint
     const files = response.files || []
@@ -500,18 +533,11 @@ const uploadFiles = async () => {
     }))
     uploadProgress.value.completed = selectedFiles.value.length
 
-    // Show success message
-    if ((files?.length || 0) > 0) {
-      setTimeout(() => {
-        // Refresh sources list to show new uploads
-        loadSources()
-        // Keep dialog open briefly to show results, then close
-        setTimeout(() => {
-          if ((files?.length || 0) === selectedFiles.value.length) {
-            cancelUpload() // Close if all successful
-          }
-        }, 2000)
-      }, 1000)
+    // Kick off indexing polling for uploaded file paths
+    indexingPaths = files.map(f => f.path).filter(Boolean)
+    if (indexingPaths.length) {
+      startIndexingPoll(indexingPaths)
+      showInfo(`Re-indexing ${indexingPaths.length} file${indexingPaths.length>1?'s':''}...`)
     }
 
   } catch (error) {
@@ -536,6 +562,7 @@ const cancelUpload = () => {
     completed: 0,
     total: 0
   }
+  stopIndexingPoll()
 }
 
 const formatFileSize = (bytes) => {
@@ -728,6 +755,10 @@ onMounted(() => {
   }
 })
 
+onUnmounted(() => {
+  stopIndexingPoll()
+})
+
 // UI helpers
 const getStatusColor = (status) => {
   const s = (status || '').toLowerCase()
@@ -737,6 +768,59 @@ const getStatusColor = (status) => {
   if (s === 'error') return 'error'
   if (s === 'orphaned' || s === 'missing_file') return 'warning'
   return 'default'
+}
+
+// ---- Indexing poll helpers ----
+const startIndexingPoll = (paths) => {
+  stopIndexingPoll()
+  indexingProgress.value = { active: true, completed: 0, total: paths.length }
+  const start = Date.now()
+  const timeoutMs = 120000 // 2 minutes max wait
+  const tick = async () => {
+    try {
+      // Fetch current file statuses (tenant-scoped)
+      const res = await adminAPI.getKnowledgeFilesStatus({ limit: 1000 })
+      const rows = Array.isArray(res?.files) ? res.files : []
+      // Count how many of our uploaded files are indexed
+      let done = 0
+      const byPath = new Map(rows.map(r => [r.path, r]))
+      for (const p of paths) {
+        const r = byPath.get(p)
+        if (r && ((r.status && String(r.status).toLowerCase() === 'indexed') || (r.vector_count && r.vector_count > 0))) {
+          done += 1
+        }
+      }
+      indexingProgress.value.completed = done
+      // Refresh sources to reflect chunk_count updates while polling
+      tenantStore.loadKnowledgeSources(true).catch(() => {})
+      if (done >= paths.length) {
+        showSuccess('Re-indexing complete')
+        stopIndexingPoll()
+        // One more refresh for final state
+        loadSources()
+        return
+      }
+      if (Date.now() - start > timeoutMs) {
+        // Timeout: stop polling but leave UI; user can manually refresh
+        showWarning('Indexing taking longer than expected — still in progress')
+        stopIndexingPoll()
+        return
+      }
+    } catch (e) {
+      // Non-fatal; keep polling a few times
+    }
+  }
+  indexingPollTimer = setInterval(tick, 1500)
+  // Run first tick shortly
+  setTimeout(tick, 800)
+}
+
+const stopIndexingPoll = () => {
+  if (indexingPollTimer) {
+    clearInterval(indexingPollTimer)
+    indexingPollTimer = null
+  }
+  indexingProgress.value.active = false
 }
 </script>
 
