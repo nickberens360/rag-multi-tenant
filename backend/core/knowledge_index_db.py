@@ -279,3 +279,160 @@ class KnowledgeIndexDB:
                 "scope",
             ]
             return [{c: r[i] for i, c in enumerate(cols)} for r in rows]
+
+    def get_file_metadata(self, path: str, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """
+        Get file metadata including effective (manual > inferred) metadata fields.
+
+        Returns:
+            Dictionary with file info plus effective_content_type, effective_tags, and provenance
+        """
+        with get_db_session_sync() as session:
+            if session is None:
+                return None
+
+            try:
+                if tenant_id:
+                    session.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": str(tenant_id)})
+            except Exception:
+                pass
+
+            row = session.execute(
+                text(
+                    """
+                    SELECT id, path, dir, filename, ext, size, mtime, hash, status,
+                           chunk_count, vector_count, discovered_at, indexed_at,
+                           last_error, last_error_at, tenant_id, scope,
+                           manual_content_type, manual_tags, inferred_content_type,
+                           inferred_tags, inferred_confidence, metadata_provenance,
+                           metadata_updated_by, metadata_updated_at, metadata_version,
+                           COALESCE(manual_content_type, inferred_content_type) as effective_content_type,
+                           COALESCE(manual_tags, inferred_tags, '[]'::jsonb) as effective_tags
+                    FROM knowledge_files
+                    WHERE path = :path
+                      AND tenant_id = COALESCE(:tenant_id, CAST(current_setting('app.default_tenant_id', true) AS uuid))
+                    """
+                ),
+                {"path": path, "tenant_id": tenant_id},
+            ).first()
+
+            if not row:
+                return None
+
+            cols = [
+                "id",
+                "path",
+                "dir",
+                "filename",
+                "ext",
+                "size",
+                "mtime",
+                "hash",
+                "status",
+                "chunk_count",
+                "vector_count",
+                "discovered_at",
+                "indexed_at",
+                "last_error",
+                "last_error_at",
+                "tenant_id",
+                "scope",
+                "manual_content_type",
+                "manual_tags",
+                "inferred_content_type",
+                "inferred_tags",
+                "inferred_confidence",
+                "metadata_provenance",
+                "metadata_updated_by",
+                "metadata_updated_at",
+                "metadata_version",
+                "effective_content_type",
+                "effective_tags",
+            ]
+            return {c: row[i] for i, c in enumerate(cols)}
+
+    def list_files_with_metadata(
+        self,
+        *,
+        status: Optional[str] = None,
+        limit: int = 200,
+        offset: int = 0,
+        tenant_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        List files with metadata including effective fields.
+
+        SECURITY: When tenant_id is provided, ONLY returns files belonging to that tenant.
+        """
+        with get_db_session_sync() as session:
+            if session is None:
+                return []
+
+            try:
+                if tenant_id:
+                    session.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": str(tenant_id)})
+            except Exception:
+                pass
+
+            # Build WHERE clause for tenant filtering
+            where_conditions = []
+            params = {"lim": int(limit), "off": int(offset)}
+
+            if tenant_id:
+                where_conditions.append("tenant_id = :tenant_id")
+                params["tenant_id"] = tenant_id
+
+            if status:
+                where_conditions.append("status = :st")
+                params["st"] = status
+
+            where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+
+            query = text(
+                f"""
+                SELECT id, path, dir, filename, ext, size, mtime, hash, status,
+                       chunk_count, vector_count, discovered_at, indexed_at,
+                       last_error, last_error_at, tenant_id, scope,
+                       manual_content_type, manual_tags, inferred_content_type,
+                       inferred_tags, inferred_confidence, metadata_provenance,
+                       metadata_updated_by, metadata_updated_at, metadata_version,
+                       COALESCE(manual_content_type, inferred_content_type) as effective_content_type,
+                       COALESCE(manual_tags, inferred_tags, '[]'::jsonb) as effective_tags
+                FROM knowledge_files{where_clause}
+                ORDER BY filename
+                LIMIT :lim OFFSET :off
+                """
+            )
+
+            rows = session.execute(query, params).fetchall()
+            cols = [
+                "id",
+                "path",
+                "dir",
+                "filename",
+                "ext",
+                "size",
+                "mtime",
+                "hash",
+                "status",
+                "chunk_count",
+                "vector_count",
+                "discovered_at",
+                "indexed_at",
+                "last_error",
+                "last_error_at",
+                "tenant_id",
+                "scope",
+                "manual_content_type",
+                "manual_tags",
+                "inferred_content_type",
+                "inferred_tags",
+                "inferred_confidence",
+                "metadata_provenance",
+                "metadata_updated_by",
+                "metadata_updated_at",
+                "metadata_version",
+                "effective_content_type",
+                "effective_tags",
+            ]
+            return [{c: r[i] for i, c in enumerate(cols)} for r in rows]

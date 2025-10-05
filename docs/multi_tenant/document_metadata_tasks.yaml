@@ -8,11 +8,9 @@ summary: >-
 defaults:
   tenant_scoped: true
   rls: true
+  always_on: true
 
 env_flags:
-  - key: ENABLE_DOC_METADATA
-    example: "true"
-    description: Feature flag to enable metadata UI + API
   - key: METADATA_INFERENCE_MODEL
     example: "claude-3-haiku"
     description: Model used for asynchronous metadata inference
@@ -143,4 +141,3 @@ tasks:
     validation:
       - command: pytest -q tests/integration/test_document_metadata.py
       - command: pytest -q tests/e2e/test_document_metadata_flow.py
-

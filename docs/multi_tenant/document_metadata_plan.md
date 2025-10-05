@@ -1,5 +1,7 @@
 # Document Metadata: User-Defined With LLM Fallback (Multi‑Tenant)
 
+**Implementation Status**: In Progress (Phase 1 Complete - Backend Foundation)
+
 Goal
 - Allow admins to set document‑level metadata (e.g., content type, tags) at upload and edit time.
 - When metadata is omitted, infer it asynchronously with an LLM and mark provenance as "inferred" with confidence.
@@ -76,13 +78,12 @@ Security & Isolation
 - All CRUD is tenant‑scoped via RLS and middleware; taxonomy is per‑tenant.
 - Audit: store `metadata_updated_by` and log to audit trail on manual edits.
 
-Rollout Plan
-1) Add DB migrations; deploy without UI exposure.
+Rollout Plan (Early Dev — Always On)
+1) Add DB migrations.
 2) Implement backend endpoints + background tasks.
-3) Add UI fields (hidden behind feature flag per tenant).
-4) Enable for a pilot tenant; validate accuracy/latency/UX.
-5) Backfill inference for existing files (job + progress).
-6) Gradually enable cross tenants; monitor telemetry.
+3) Add UI fields (always visible in upload and edit flows).
+4) Backfill inference for existing files (job + progress).
+5) Validate accuracy/latency with seed data; iterate taxonomy/prompt as needed.
 
 Risks & Mitigations
 - Mis‑tags harm recall → inferred used as soft signal; manual overrides win.
@@ -96,3 +97,45 @@ Testing Strategy
 
 See `document_metadata_tasks.yaml` for machine‑readable steps.
 
+## Implementation Progress (Phase 1 - Backend Complete)
+
+### ✅ Completed Tasks
+
+**dm_schema**: Database Schema Migration
+- Created Alembic migration: `backend/db/versions/20251005_070529_add_document_metadata.py`
+- Added metadata columns to `knowledge_files` table:
+  - `manual_content_type`, `manual_tags` for user-defined metadata
+  - `inferred_content_type`, `inferred_tags`, `inferred_confidence` for LLM-inferred metadata
+  - `metadata_provenance`, `metadata_updated_by`, `metadata_updated_at`, `metadata_version` for tracking
+- Created `tenant_taxonomy` table for controlled vocabulary with RLS
+- Inserted default taxonomy entries for the default tenant
+
+**dm_backend_endpoints**: Backend API Endpoints
+- Created `backend/core/metadata_inference.py` - LLM-based metadata inference service
+- Created `backend/routes/taxonomy.py` - Tenant taxonomy CRUD endpoints
+- Modified `backend/routes/knowledge_uploads.py` to accept optional metadata on upload
+- Modified `backend/routes/knowledge.py` to support manual metadata updates and batch inference
+- Added methods to `backend/core/knowledge_index_db.py`:
+  - `get_file_metadata()` - Returns effective metadata (manual > inferred)
+  - `list_files_with_metadata()` - Lists files with metadata fields
+- Registered taxonomy routes in `backend/core/app_factory.py`
+
+**dm_inference_worker**: Background Inference Implementation
+- Implemented `infer_metadata_background()` background task function
+- Integrated with FastAPI BackgroundTasks in upload flow
+- Automatic inference trigger when metadata not provided on upload
+- LLM-based inference using Claude Haiku (configurable via METADATA_INFERENCE_MODEL env)
+
+### 🚧 In Progress
+
+**dm_propagation**: Metadata Propagation to Chunks
+- Need to update `backend/core/unified_retriever.py` to stamp effective metadata on chunks during indexing
+- Need to mark files for reindex when manual metadata changes
+
+### 📋 Remaining Tasks
+
+**dm_frontend_upload**: Upload UI Enhancement
+**dm_frontend_edit**: Source Editor Enhancement
+**dm_retrieval_policy**: Retrieval Semantics
+**dm_audit_telemetry**: Audit and Metrics
+**dm_docs_tests**: Documentation and Tests

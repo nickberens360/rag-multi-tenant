@@ -125,6 +125,8 @@ async def upload_knowledge_files(
     files: List[UploadFile] = File(...),
     path_prefix: Optional[str] = Form(None),
     index_now: bool = Form(True),
+    metadata_content_type: Optional[str] = Form(None),
+    metadata_tags: Optional[str] = Form(None),
     tenant_context: Dict = Depends(get_tenant_context),
 ) -> JSONResponse:
     """
@@ -133,6 +135,9 @@ async def upload_knowledge_files(
     Args:
         files: List of files to upload (multipart/form-data)
         path_prefix: Optional subdirectory within tenant documents folder
+        index_now: Whether to trigger immediate indexing (default: True)
+        metadata_content_type: Optional manual content type for uploaded files
+        metadata_tags: Optional comma-separated tags for uploaded files
         tenant_context: Tenant context from middleware
 
     Returns:
@@ -186,6 +191,53 @@ async def upload_knowledge_files(
 
             # Record in database (discovered)
             db.upsert_file(path=str(full_path), size=len(content), tenant_id=tenant_id, scope="tenant")
+
+            # Set manual metadata if provided
+            if metadata_content_type or metadata_tags:
+                from sqlalchemy import text
+                from ..core.db_session import get_db_session_sync
+
+                try:
+                    with get_db_session_sync() as session:
+                        if session is not None:
+                            session.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": str(tenant_id)})
+
+                            # Parse tags from CSV
+                            tags_list = []
+                            if metadata_tags:
+                                tags_list = [t.strip() for t in metadata_tags.split(",") if t.strip()]
+
+                            session.execute(
+                                text(
+                                    """
+                                    UPDATE knowledge_files
+                                    SET manual_content_type = :content_type,
+                                        manual_tags = :tags::jsonb,
+                                        metadata_provenance = 'manual',
+                                        metadata_updated_at = NOW(),
+                                        metadata_version = metadata_version + 1
+                                    WHERE path = :path AND tenant_id = :tenant_id
+                                    """
+                                ),
+                                {
+                                    "path": str(full_path),
+                                    "tenant_id": tenant_id,
+                                    "content_type": metadata_content_type,
+                                    "tags": tags_list,
+                                },
+                            )
+                            logger.info(f"Set manual metadata for {full_path}: type={metadata_content_type}, tags={tags_list}")
+                except Exception as e:
+                    logger.warning(f"Failed to set manual metadata for {full_path}: {e}")
+            else:
+                # Queue background inference if no manual metadata provided
+                try:
+                    from ..core.metadata_inference import infer_metadata_background
+
+                    background_tasks.add_task(infer_metadata_background, str(full_path), tenant_id)
+                    logger.info(f"Queued background metadata inference for {full_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to queue metadata inference for {full_path}: {e}")
 
             uploaded_files.append(
                 UploadResponse(

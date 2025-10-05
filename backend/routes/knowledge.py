@@ -14,10 +14,11 @@ from pathlib import Path
 from typing import List, Optional
 
 import aiofiles
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel
 
 from ..core.admin_auth import require_admin_auth
+from ..dependencies import get_tenant_context
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,7 +57,17 @@ class KnowledgeStats(BaseModel):
 class SourceUpdateRequest(BaseModel):
     """Model for updating a source."""
 
-    content_type: Optional[str] = None
+    content_type: Optional[str] = None  # For backward compatibility
+    manual_content_type: Optional[str] = None
+    manual_tags: Optional[List[str]] = None
+
+
+class MetadataInferenceRequest(BaseModel):
+    """Request model for triggering metadata inference."""
+
+    paths: Optional[List[str]] = None  # Specific paths to infer; if None, infer all files without metadata
+    dry_run: bool = False  # If True, only return what would be inferred without updating
+    limit: Optional[int] = None  # Maximum number of files to process
 
 
 @router.get("/knowledge/documents", response_model=IndexedDocumentsResponse)
@@ -421,57 +432,119 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
 
     Args:
         source_path: The path of the source to update
-        update_data: The data to update
+        update_data: The data to update (supports manual_content_type, manual_tags)
 
     Returns:
         Success message and updated source info
     """
     try:
-        # Get the unified retriever from the app state
-        if not hasattr(request.app.state, "unified_retriever"):
-            raise HTTPException(status_code=503, detail="Knowledge base not initialized")
+        # Get tenant context for RLS
+        tenant_id = getattr(request.state, "tenant_id", None)
 
-        retriever = request.app.state.unified_retriever
+        # Update manual metadata in database if provided
+        if update_data.manual_content_type is not None or update_data.manual_tags is not None:
+            from sqlalchemy import text
+            from ..core.db_session import get_db_session_sync
 
-        # Access the vector store through the semantic_searcher component
-        if not hasattr(retriever, "semantic_searcher") or not retriever.semantic_searcher:
-            raise HTTPException(status_code=503, detail="Semantic searcher not available")
+            with get_db_session_sync() as session:
+                if session is None:
+                    raise HTTPException(status_code=503, detail="Database not available")
 
-        if not retriever.semantic_searcher.vector_store:
-            raise HTTPException(status_code=503, detail="Vector store not available")
+                # Set tenant context for RLS
+                if tenant_id:
+                    session.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": str(tenant_id)})
 
-        # Find all documents from this source using encapsulated method
-        documents = retriever.semantic_searcher.get_documents_by_source(source_path)
+                # Check if file exists in database
+                existing = session.execute(
+                    text(
+                        """
+                        SELECT path FROM knowledge_files
+                        WHERE path = :path
+                        """
+                    ),
+                    {"path": source_path},
+                ).fetchone()
 
-        if not documents:
-            raise HTTPException(status_code=404, detail=f"Source '{source_path}' not found")
+                if not existing:
+                    raise HTTPException(status_code=404, detail=f"Source '{source_path}' not found in database")
 
-        # Update metadata for all chunks from this source
-        updated_metadatas = []
-        document_ids = []
-        for doc in documents:
-            doc_id = doc["id"]
-            metadata = doc.get("metadata", {})
+                # Build update query
+                updates = []
+                params = {"path": source_path}
 
-            # Update the content_type if provided
-            if update_data.content_type is not None:
-                metadata["content_type"] = update_data.content_type
+                if update_data.manual_content_type is not None:
+                    updates.append("manual_content_type = :content_type")
+                    params["content_type"] = update_data.manual_content_type
 
-            updated_metadatas.append(metadata)
-            document_ids.append(doc_id)
+                if update_data.manual_tags is not None:
+                    updates.append("manual_tags = :tags::jsonb")
+                    params["tags"] = update_data.manual_tags
 
-        # Update using encapsulated method
-        success = retriever.semantic_searcher.update_documents_metadata(document_ids, updated_metadatas)
+                if updates:
+                    updates.extend([
+                        "metadata_provenance = 'manual'",
+                        "metadata_updated_at = NOW()",
+                        "metadata_version = metadata_version + 1",
+                        "status = 'discovered'",  # Mark for reindex
+                    ])
 
-        if not success:
-            raise HTTPException(status_code=500, detail="Failed to update source metadata")
+                    query = f"""
+                        UPDATE knowledge_files
+                        SET {', '.join(updates)}
+                        WHERE path = :path
+                    """
+                    session.execute(text(query), params)
+                    logger.info(f"Updated manual metadata for {source_path}")
 
-        logger.info(f"Updated {len(documents)} documents from source: {source_path}")
+                    # Trigger reindex in background to propagate metadata to chunks
+                    try:
+                        if hasattr(request.app.state, "unified_retriever") and request.app.state.unified_retriever:
+                            from ..core.background_tasks import BackgroundTasks
+                            bg_tasks = BackgroundTasks()
+                            bg_tasks.add_task(_reindex_file_task, source_path, tenant_id, request.app.state.unified_retriever)
+                            logger.info(f"Queued reindex for {source_path} to propagate metadata")
+                    except Exception as e:
+                        logger.warning(f"Failed to queue reindex: {e}")
+
+        # Also update vector store metadata for backward compatibility
+        if update_data.content_type is not None:
+            # Get the unified retriever from the app state
+            if not hasattr(request.app.state, "unified_retriever"):
+                raise HTTPException(status_code=503, detail="Knowledge base not initialized")
+
+            retriever = request.app.state.unified_retriever
+
+            # Access the vector store through the semantic_searcher component
+            if not hasattr(retriever, "semantic_searcher") or not retriever.semantic_searcher:
+                raise HTTPException(status_code=503, detail="Semantic searcher not available")
+
+            if not retriever.semantic_searcher.vector_store:
+                raise HTTPException(status_code=503, detail="Vector store not available")
+
+            # Find all documents from this source using encapsulated method
+            documents = retriever.semantic_searcher.get_documents_by_source(source_path)
+
+            if documents:
+                # Update metadata for all chunks from this source
+                updated_metadatas = []
+                document_ids = []
+                for doc in documents:
+                    doc_id = doc["id"]
+                    metadata = doc.get("metadata", {})
+                    metadata["content_type"] = update_data.content_type
+                    updated_metadatas.append(metadata)
+                    document_ids.append(doc_id)
+
+                # Update using encapsulated method
+                success = retriever.semantic_searcher.update_documents_metadata(document_ids, updated_metadatas)
+
+                if not success:
+                    logger.warning("Failed to update vector store metadata (non-fatal)")
 
         return {
             "success": True,
-            "message": f"Updated {len(documents)} documents from source '{source_path}'",
-            "updated_chunks": len(documents),
+            "message": f"Updated metadata for source '{source_path}'",
+            "source_path": source_path,
         }
 
     except HTTPException:
@@ -809,3 +882,96 @@ async def upload_knowledge_files(
     except Exception as e:
         logger.error(f"Upload failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@router.post("/knowledge/metadata/infer")
+async def infer_metadata_batch(
+    request: MetadataInferenceRequest,
+    background_tasks: BackgroundTasks,
+    tenant_context: dict = Depends(get_tenant_context),
+) -> dict:
+    """
+    Trigger batch metadata inference for files.
+
+    Args:
+        request: Inference request with optional paths, dry_run, and limit
+        background_tasks: FastAPI background tasks
+        tenant_context: Tenant context from middleware
+
+    Returns:
+        Status of the inference job
+    """
+    try:
+        from ..core.knowledge_index_db import KnowledgeIndexDB
+        from ..core.metadata_inference import infer_metadata_background
+
+        tenant_id = tenant_context.get("tenant_id")
+        if not tenant_id:
+            raise HTTPException(status_code=400, detail="Tenant context not available")
+
+        db = KnowledgeIndexDB()
+
+        # Determine which files to process
+        if request.paths:
+            # Specific paths provided
+            files_to_process = []
+            for path in request.paths:
+                file_metadata = db.get_file_metadata(path, tenant_id=tenant_id)
+                if file_metadata:
+                    files_to_process.append(file_metadata)
+        else:
+            # Get all files without manual metadata
+            all_files = db.list_files_with_metadata(tenant_id=tenant_id, limit=10000)
+            files_to_process = [
+                f
+                for f in all_files
+                if f.get("manual_content_type") is None and f.get("manual_tags") in (None, [])
+            ]
+
+        # Apply limit if provided
+        if request.limit:
+            files_to_process = files_to_process[: request.limit]
+
+        if request.dry_run:
+            # Return what would be processed without actually inferring
+            return {
+                "success": True,
+                "dry_run": True,
+                "files_to_process": len(files_to_process),
+                "files": [
+                    {
+                        "path": f["path"],
+                        "filename": f["filename"],
+                        "current_inferred": f.get("inferred_content_type"),
+                    }
+                    for f in files_to_process
+                ],
+            }
+
+        # Queue background tasks for inference
+        queued_count = 0
+        for file_metadata in files_to_process:
+            try:
+                background_tasks.add_task(
+                    infer_metadata_background,
+                    file_metadata["path"],
+                    tenant_id,
+                )
+                queued_count += 1
+            except Exception as e:
+                logger.warning(f"Failed to queue inference for {file_metadata['path']}: {e}")
+
+        logger.info(f"Queued {queued_count} files for metadata inference for tenant {tenant_id}")
+
+        return {
+            "success": True,
+            "message": f"Queued {queued_count} files for metadata inference",
+            "queued_count": queued_count,
+            "total_eligible": len(files_to_process),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to trigger metadata inference: {e}")
+        raise HTTPException(status_code=500, detail="Failed to trigger metadata inference")

@@ -288,6 +288,7 @@ def create_app(lifespan: Optional[Callable[[FastAPI], AsyncContextManager]] = No
         query_logs,
         smart_query,
         stats,
+        taxonomy,
     )
 
     # Import tenant routes if multi-tenant is enabled
@@ -351,6 +352,8 @@ def create_app(lifespan: Optional[Callable[[FastAPI], AsyncContextManager]] = No
         app.include_router(knowledge.router, prefix="/{tenant}/api/admin")
         # Tenant-specific knowledge upload endpoints under tenant-prefixed admin path
         app.include_router(knowledge_uploads.router, prefix="/{tenant}/api/admin")
+        # Taxonomy management under tenant-prefixed admin path
+        app.include_router(taxonomy.router, prefix="/{tenant}/api/admin")
 
     # Backward-compatible aliases for one deprecation cycle (hidden from schema)
     app.include_router(smart_query.router, prefix="/api/public", include_in_schema=False)
@@ -394,6 +397,7 @@ def create_app(lifespan: Optional[Callable[[FastAPI], AsyncContextManager]] = No
     app.include_router(stats.router, prefix="/api/admin")  # Admin stats for dashboard
     app.include_router(performance.router, prefix="/api/admin")  # Admin performance metrics
     app.include_router(knowledge_admin_sync.router, prefix="/api/admin")
+    app.include_router(taxonomy.router, prefix="/api/admin")  # Taxonomy management
     # Expose content routes under admin prefix as well for consistent client base
     app.include_router(content.router, prefix="/api/admin")
 
