@@ -6,6 +6,7 @@ This module provides focused functionality for:
 - Smart routing based on query patterns
 - Adaptive search strategy selection
 - Content type hint extraction
+- Metadata filter extraction from natural language queries
 """
 
 import logging
@@ -14,6 +15,7 @@ from typing import List, Optional
 
 from langchain.docstore.document import Document
 
+from ..models.filter_models import MetadataFilter, RetrievalFilters
 from .config_v2 import AppConfig
 from .semantic_searcher import SemanticSearcher
 from .taxonomy_loader import get_topic_taxonomy
@@ -26,6 +28,80 @@ class ContentRouter:
 
     def __init__(self, semantic_searcher: SemanticSearcher):
         self.semantic_searcher = semantic_searcher
+
+    def detect_metadata_filters(self, query: str) -> RetrievalFilters:
+        """
+        Detect metadata filter requests from natural language queries.
+
+        This method extracts metadata filtering intent from queries like:
+        - "show me technical documents" -> content_type:technical (soft)
+        - "only technical content" -> content_type:technical:strict (strict)
+        - "python tutorials" -> tags:python (soft)
+        - "strictly python code" -> tags:python:strict (strict)
+
+        Args:
+            query: User query text
+
+        Returns:
+            RetrievalFilters object with detected filters
+        """
+        query_lower = query.lower().strip()
+        filters = RetrievalFilters()
+
+        # Pattern 1: Detect strict intent keywords
+        strict_keywords = ["only", "strictly", "exclusively", "must be", "just"]
+        is_strict = any(keyword in query_lower for keyword in strict_keywords)
+
+        # Pattern 2: Detect content type filters
+        content_type_patterns = {
+            "technical": [r"\btechnical\b", r"\bcode\b", r"\bapi\b", r"\bdocumentation\b"],
+            "experience": [r"\bexperience\b", r"\bwork history\b", r"\bresume\b", r"\bjobs?\b"],
+            "about": [r"\babout\b", r"\bbackground\b", r"\bbio\b", r"\bpersonal\b"],
+            "creative": [r"\bcreative\b", r"\bart\b", r"\bdesign\b", r"\billustration\b"],
+            "project": [r"\bprojects?\b", r"\bportfolio\b", r"\bbuilt\b", r"\bcreated\b"],
+        }
+
+        for content_type, patterns in content_type_patterns.items():
+            for pattern in patterns:
+                if re.search(pattern, query_lower):
+                    filters.content_type = MetadataFilter(
+                        field="effective_content_type", value=content_type, strict=is_strict
+                    )
+                    logger.debug(f"Detected content_type filter: {content_type} ({'strict' if is_strict else 'soft'})")
+                    break
+            if filters.content_type:
+                break
+
+        # Pattern 3: Detect tag filters (programming languages, technologies)
+        tag_patterns = {
+            "python": [r"\bpython\b"],
+            "javascript": [r"\bjavascript\b", r"\bjs\b"],
+            "typescript": [r"\btypescript\b", r"\bts\b"],
+            "react": [r"\breact\b"],
+            "vue": [r"\bvue\b", r"\bvuejs\b"],
+            "fastapi": [r"\bfastapi\b"],
+            "docker": [r"\bdocker\b"],
+            "kubernetes": [r"\bkubernetes\b", r"\bk8s\b"],
+            "aws": [r"\baws\b", r"\bamazon web services\b"],
+            "gcp": [r"\bgcp\b", r"\bgoogle cloud\b"],
+        }
+
+        for tag, patterns in tag_patterns.items():
+            for pattern in patterns:
+                if re.search(pattern, query_lower):
+                    filters.tags.append(
+                        MetadataFilter(field="effective_tags", value=tag, strict=is_strict, boost_weight=0.3)
+                    )
+                    logger.debug(f"Detected tag filter: {tag} ({'strict' if is_strict else 'soft'})")
+                    break
+
+        if filters.has_filters():
+            logger.info(
+                f"Detected {len(filters.get_strict_filters())} strict filters, "
+                f"{len(filters.get_soft_filters())} soft filters from query"
+            )
+
+        return filters
 
     def detect_content_types(self, query: str) -> List[str]:
         """
@@ -126,29 +202,38 @@ class ContentRouter:
                 seen.add(h)
         return ordered
 
-    def auto_route_query(self, query: str) -> List[Document]:
+    def auto_route_query(self, query: str, explicit_filters: Optional[RetrievalFilters] = None) -> List[Document]:
         """
         Automatically route query to the most relevant content.
         No manual configuration needed!
 
         Args:
             query: User query text
+            explicit_filters: Optional explicit metadata filters (overrides auto-detection)
 
         Returns:
             List of relevant documents
         """
+        # Detect metadata filters from query or use explicit filters
+        metadata_filters = explicit_filters if explicit_filters else self.detect_metadata_filters(query)
+
+        # Also detect content type hints for legacy compatibility
         content_type_hints = self.detect_content_types(query)
 
         # Perform search with intelligent filtering
-        if content_type_hints:
+        if content_type_hints or metadata_filters.has_filters():
             # Use generous distance thresholds to ensure good coverage
             # Since ChromaDB returns distance scores (lower=better), higher threshold = more inclusive
             initial_threshold = AppConfig.INCLUSIVE_DISTANCE_THRESHOLD  # Include good to fair matches
             k_value = AppConfig.EXPANDED_SEARCH_K  # Get more results to ensure comprehensive coverage
 
-            # First try filtered search
+            # First try filtered search with metadata filters
             results = self.semantic_searcher.semantic_search(
-                query, k=k_value, filter_content_types=content_type_hints, score_threshold=initial_threshold
+                query,
+                k=k_value,
+                filter_content_types=content_type_hints,
+                score_threshold=initial_threshold,
+                metadata_filters=metadata_filters if metadata_filters.has_filters() else None,
             )
 
             # If not enough results, broaden the search with even higher threshold

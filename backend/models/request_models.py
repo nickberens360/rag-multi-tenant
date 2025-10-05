@@ -68,6 +68,19 @@ class Query(BaseModel):
         description="User's preferred AI model (claude or gemini). Leave empty for automatic selection.",
         examples=["claude", "gemini", None],
     )
+    metadata_filters: Optional[List[str]] = Field(
+        default=None,
+        description=(
+            "Optional metadata filters for retrieval. Format: 'field:value' or 'field:value:strict'. "
+            "Examples: ['content_type:technical'], ['tags:python:strict'], ['content_type:experience', 'tags:vue']"
+        ),
+        examples=[
+            ["content_type:technical"],
+            ["tags:python:strict"],
+            ["content_type:experience", "tags:vue"],
+            None,
+        ],
+    )
 
     model_config = {
         "json_schema_extra": {

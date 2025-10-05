@@ -6,6 +6,7 @@ This module provides focused functionality for:
 - Semantic similarity search with filtering
 - Document retrieval and scoring
 - LangChain retriever interface compatibility
+- Metadata-aware filtering (strict vs soft)
 """
 
 import json
@@ -33,6 +34,7 @@ try:
 except Exception:  # pragma: no cover - not present in all environments
     ChromaInternalError = Exception  # type: ignore
 
+from ..models.filter_models import MetadataFilter, RetrievalFilters
 from .config_v2 import AppConfig
 
 logger = logging.getLogger(__name__)
@@ -109,6 +111,117 @@ class SemanticSearcher:
         except Exception as e:
             logger.debug(f"Failed to get search retrieval settings: {e}")
             return None
+
+    def _build_where_clause(self, filters: RetrievalFilters) -> Optional[Dict[str, Any]]:
+        """
+        Build ChromaDB where clause for strict filters.
+
+        Only applies filters with provenance='manual' to ensure we're filtering
+        on authoritative metadata, not inferred metadata.
+
+        Args:
+            filters: RetrievalFilters object with filter specifications
+
+        Returns:
+            ChromaDB where clause dictionary, or None if no strict filters
+        """
+        strict_filters = filters.get_strict_filters()
+        if not strict_filters:
+            return None
+
+        # Build where clause that checks both metadata_provenance='manual' AND filter conditions
+        conditions = []
+
+        for filter_spec in strict_filters:
+            if filter_spec.field == "effective_content_type":
+                # Strict content type filter: ONLY manual metadata with matching value
+                conditions.append(
+                    {"$and": [{"metadata_provenance": "manual"}, {"effective_content_type": filter_spec.value}]}
+                )
+            elif filter_spec.field == "effective_tags":
+                # Strict tag filter: ONLY manual metadata containing the tag
+                # Tags are stored as JSON array string, need to check if value is in the array
+                conditions.append(
+                    {"$and": [{"metadata_provenance": "manual"}, {"effective_tags": {"$contains": filter_spec.value}}]}
+                )
+
+        if not conditions:
+            return None
+
+        # If multiple strict filters, combine with AND
+        if len(conditions) == 1:
+            return conditions[0]
+        else:
+            return {"$and": conditions}
+
+    def _apply_soft_reranking(
+        self, docs_and_scores: List[tuple[Document, float]], filters: RetrievalFilters
+    ) -> List[tuple[Document, float]]:
+        """
+        Apply soft reranking based on metadata filters.
+
+        Boosts scores for documents that match filter criteria, with higher
+        boost for manual metadata than inferred metadata.
+
+        Args:
+            docs_and_scores: List of (document, distance_score) tuples
+            filters: RetrievalFilters with soft filter specifications
+
+        Returns:
+            List of (document, adjusted_distance_score) tuples, sorted by adjusted score
+        """
+        soft_filters = filters.get_soft_filters()
+        if not soft_filters:
+            return docs_and_scores
+
+        reranked = []
+        for doc, distance_score in docs_and_scores:
+            # Start with original distance (lower is better)
+            adjusted_score = distance_score
+            boost_applied = 0.0
+
+            for filter_spec in soft_filters:
+                metadata_value = doc.metadata.get(filter_spec.field)
+                provenance = doc.metadata.get("metadata_provenance", "inferred")
+
+                # Check if metadata matches filter
+                matches = False
+                if filter_spec.field == "effective_content_type":
+                    matches = metadata_value == filter_spec.value
+                elif filter_spec.field == "effective_tags":
+                    # Tags stored as JSON string, need to parse
+                    try:
+                        if isinstance(metadata_value, str):
+                            import json
+
+                            tags = json.loads(metadata_value) if metadata_value.startswith("[") else [metadata_value]
+                        elif isinstance(metadata_value, list):
+                            tags = metadata_value
+                        else:
+                            tags = []
+                        matches = filter_spec.value in tags
+                    except Exception:
+                        matches = False
+
+                if matches:
+                    # Apply boost (reduce distance score since lower is better)
+                    # Higher boost for manual metadata (authoritative)
+                    if provenance == "manual":
+                        boost = filter_spec.boost_weight * 1.5  # 50% more boost for manual
+                        logger.debug(f"Applying MANUAL boost {boost:.2f} for {filter_spec.field}={filter_spec.value}")
+                    else:
+                        boost = filter_spec.boost_weight
+                        logger.debug(f"Applying INFERRED boost {boost:.2f} for {filter_spec.field}={filter_spec.value}")
+
+                    boost_applied += boost
+
+            # Apply accumulated boost (reduce distance for matches)
+            adjusted_score = max(0.0, distance_score - boost_applied)
+            reranked.append((doc, adjusted_score))
+
+        # Sort by adjusted score (lower is better)
+        reranked.sort(key=lambda x: x[1])
+        return reranked
 
     def _initialize_store(self):
         """Initialize or load the unified vector store.
@@ -329,6 +442,7 @@ class SemanticSearcher:
         filter_content_types: Optional[List[str]] = None,
         score_threshold: float = None,
         use_mmr: bool = None,
+        metadata_filters: Optional[RetrievalFilters] = None,
     ) -> List[Document]:
         """
         Perform semantic search with optional filtering and scoring.
@@ -336,12 +450,13 @@ class SemanticSearcher:
         Args:
             query: Search query text
             k: Number of results to return (defaults to AppConfig.DEFAULT_SEARCH_K)
-            filter_content_types: Optional list of content types to filter by
+            filter_content_types: Optional list of content types to filter by (legacy parameter, prefer metadata_filters)
             score_threshold: Distance threshold for filtering results (defaults to AppConfig.DEFAULT_DISTANCE_THRESHOLD)
             use_mmr: Whether to use MMR (Maximum Marginal Relevance) for diversity (defaults to AppConfig.RAG_USE_MMR)
                            - ChromaDB returns DISTANCE scores (lower = better similarity)
                            - Typical range: 0.0-2.0 with L2 distance
                            - Use 0.0 for no filtering, 0.5-1.0 for good matches, 1.0+ for broader results
+            metadata_filters: RetrievalFilters object with strict/soft filter specifications
 
         Returns:
             List of Document objects ranked by similarity (best matches first)
@@ -376,6 +491,13 @@ class SemanticSearcher:
         if self.vector_store is None:
             raise ValueError("Vector store not initialized")
 
+        # Build ChromaDB where clause for strict filters
+        where_clause = None
+        if metadata_filters and metadata_filters.has_filters():
+            where_clause = self._build_where_clause(metadata_filters)
+            if where_clause:
+                logger.info(f"Applying strict metadata filter: {where_clause}")
+
         def _run_retrieval() -> List[tuple[Document, float]]:
             # Perform search with MMR or standard similarity search
             if use_mmr:
@@ -389,6 +511,11 @@ class SemanticSearcher:
                         fetch_k = max(search_k, AppConfig.RAG_MMR_FETCH_K)
                         lambda_mult = AppConfig.RAG_MMR_LAMBDA_MULT
 
+                    # Note: MMR doesn't support filter parameter in LangChain, so we'll need to fall back
+                    if where_clause:
+                        logger.warning("MMR search with filters not supported, falling back to similarity search")
+                        return self.vector_store.similarity_search_with_score(query, k=search_k, filter=where_clause)
+
                     docs = self.vector_store.max_marginal_relevance_search(
                         query, k=search_k, fetch_k=fetch_k, lambda_mult=lambda_mult
                     )
@@ -396,10 +523,16 @@ class SemanticSearcher:
                     return [(doc, 0.0) for doc in docs]  # MMR doesn't return scores
                 except Exception as e:
                     logger.warning(f"MMR search failed, falling back to similarity search: {e}")
-                    return self.vector_store.similarity_search_with_score(query, k=search_k)
+                    if where_clause:
+                        return self.vector_store.similarity_search_with_score(query, k=search_k, filter=where_clause)
+                    else:
+                        return self.vector_store.similarity_search_with_score(query, k=search_k)
             else:
-                # Standard similarity search
-                return self.vector_store.similarity_search_with_score(query, k=search_k)
+                # Standard similarity search with optional where clause
+                if where_clause:
+                    return self.vector_store.similarity_search_with_score(query, k=search_k, filter=where_clause)
+                else:
+                    return self.vector_store.similarity_search_with_score(query, k=search_k)
 
         # Enforce retrieval timeout if configured
         docs_and_scores: List[tuple[Document, float]] = []
@@ -427,6 +560,16 @@ class SemanticSearcher:
                 f"Score range: {min(score for _, score in docs_and_scores):.3f} - "
                 f"{max(score for _, score in docs_and_scores):.3f}"
             )
+
+        # Apply soft reranking for metadata filters
+        if metadata_filters and metadata_filters.has_filters() and docs_and_scores:
+            logger.debug("Applying soft reranking based on metadata filters")
+            docs_and_scores = self._apply_soft_reranking(docs_and_scores, metadata_filters)
+            if docs_and_scores:
+                logger.debug(
+                    f"After soft reranking: {min(score for _, score in docs_and_scores):.3f} - "
+                    f"{max(score for _, score in docs_and_scores):.3f}"
+                )
 
         # Filter by distance score threshold
         # IMPORTANT: ChromaDB's similarity_search_with_score returns DISTANCE scores where:

@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from ..core.app_initializer_v2 import get_unified_retriever
 from ..core.smart_query_handler import SmartQueryHandler
 from ..dependencies import get_services, get_smart_handler, get_tenant_context
+from ..models.filter_models import parse_filter_strings
 from ..models.request_models import Query
 
 router = APIRouter()
@@ -38,10 +39,16 @@ async def smart_query(
     - Returns structured response with metadata
     """
     try:
+        # Parse explicit metadata filters if provided
+        explicit_filters = None
+        if query.metadata_filters:
+            explicit_filters = parse_filter_strings(query.metadata_filters)
+            logger.info(f"Parsed {len(query.metadata_filters)} explicit metadata filters")
+
         # Analyze the query intent (run in threadpool to avoid blocking event loop)
         intent_analysis = await asyncio.to_thread(smart_handler.analyze_query_with_llm, query.question)
 
-        # Get relevant context using smart routing with tenant context (run in threadpool for LLM reranking)
+        # Get relevant context using smart routing with tenant context and filters (run in threadpool for LLM reranking)
         tenant_id = tenant_context.get("tenant_id")
         relevant_docs = await asyncio.to_thread(
             smart_handler.get_relevant_context,
@@ -49,6 +56,7 @@ async def smart_query(
             chat_history=[msg.dict() for msg in query.chat_history],
             max_context_length=4000,
             tenant_id=tenant_id,
+            explicit_filters=explicit_filters,
         )
 
         # Prepare response

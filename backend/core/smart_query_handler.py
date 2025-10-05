@@ -108,6 +108,7 @@ class SmartQueryHandler:
         chat_history: Optional[List[Dict]] = None,
         max_context_length: int = None,
         tenant_id: Optional[str] = None,
+        explicit_filters=None,
     ) -> List[Document]:
         """
         Get the most relevant context for a query with tenant support.
@@ -117,13 +118,21 @@ class SmartQueryHandler:
         2. Retrieves relevant documents (tenant-scoped if tenant_id provided)
         3. Ranks and filters for quality
         4. Ensures context fits within token limits
+
+        Args:
+            query: Search query text
+            chat_history: Optional chat history for context
+            max_context_length: Maximum context length in characters
+            tenant_id: Optional tenant ID for tenant-scoped search
+            explicit_filters: Optional RetrievalFilters object for metadata filtering
         """
         # Apply default from config
         if max_context_length is None:
             max_context_length = AppConfig.DEFAULT_MAX_CONTEXT_LENGTH
 
-        # Include tenant_id in cache key to prevent cross-tenant data leakage
-        cache_key = f"{query}:{len(chat_history) if chat_history else 0}:tenant:{tenant_id or 'none'}"
+        # Include tenant_id and filters in cache key to prevent cross-tenant data leakage
+        filter_key = str(explicit_filters) if explicit_filters else "none"
+        cache_key = f"{query}:{len(chat_history) if chat_history else 0}:tenant:{tenant_id or 'none'}:filters:{filter_key}"
         if cache_key in self._query_cache:
             logger.info("Using cached results for query")
             return self._query_cache[cache_key]
@@ -133,7 +142,7 @@ class SmartQueryHandler:
             docs = self.unified_retriever.semantic_search_for_tenant(query, tenant_id)
         else:
             # Fallback to standard routing for non-tenant queries or unsupported retrievers
-            docs = self.unified_retriever.auto_route_query(query)
+            docs = self.unified_retriever.auto_route_query(query, explicit_filters=explicit_filters)
 
         # Post-process documents for quality
         processed_docs = self._post_process_documents(docs, query, max_context_length)
