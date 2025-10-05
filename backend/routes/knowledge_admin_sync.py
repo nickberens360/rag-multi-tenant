@@ -172,12 +172,12 @@ async def list_knowledge_files(
         tenant_id = getattr(request.state, "tenant_id", None)
         tenant_slug = getattr(request.state, "tenant_slug", None)
         db = KnowledgeIndexDB()
-        rows = db.list_files(status=status, limit=limit, offset=offset, tenant_id=tenant_id)
+        rows = db.list_files_with_metadata(status=status, limit=limit, offset=offset, tenant_id=tenant_id)
         if not rows:
             sync = _get_sync(request)
             sync.scan_filesystem(tenant_id=tenant_id, tenant_slug=tenant_slug)
             # Refresh
-            rows = db.list_files(status=status, limit=limit, offset=offset, tenant_id=tenant_id)
+            rows = db.list_files_with_metadata(status=status, limit=limit, offset=offset, tenant_id=tenant_id)
 
         # Safety filter by path to avoid any legacy rows mis-attributed to this tenant
         if tenant_slug:

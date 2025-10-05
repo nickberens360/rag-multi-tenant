@@ -286,6 +286,18 @@ CONFIDENCE: 0.92
                 )
 
                 logger.info(f"Updated inferred metadata for {path} and marked for reindex")
+
+                # Log inference completion audit event
+                from .audit_logger import audit_logger
+
+                audit_logger.log_metadata_inference_complete(
+                    file_path=path,
+                    inferred_values={"content_type": content_type, "tags": tags},
+                    confidence=confidence,
+                    model_used=self.model,
+                    tenant_id=tenant_id,
+                )
+
                 return True
 
         except Exception as e:

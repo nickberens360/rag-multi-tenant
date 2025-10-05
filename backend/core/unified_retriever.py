@@ -248,16 +248,26 @@ class UnifiedRetriever:
                 file_metadata = db.get_file_metadata(src_path, tenant_id=tenant_id)
                 if file_metadata:
                     # Extract effective metadata for propagation to chunks
-                    effective_metadata_dict = {
-                        "effective_content_type": file_metadata.get("effective_content_type"),
-                        "effective_tags": file_metadata.get("effective_tags", []),
-                        "metadata_provenance": file_metadata.get("metadata_provenance", "inferred"),
-                    }
+                    # ChromaDB requires all metadata values to be str, int, float, or bool (no None)
+                    effective_metadata_dict = {}
+
+                    # Only add fields if they have non-None values
+                    if file_metadata.get("effective_content_type") is not None:
+                        effective_metadata_dict["effective_content_type"] = file_metadata["effective_content_type"]
+
+                    # Tags: convert to JSON string if present, otherwise omit
+                    effective_tags = file_metadata.get("effective_tags")
+                    if effective_tags:  # Only add if non-empty list
+                        # ChromaDB doesn't support lists - store as comma-separated string
+                        effective_metadata_dict["effective_tags"] = ",".join(effective_tags) if isinstance(effective_tags, list) else str(effective_tags)
+
+                    # Provenance: default to empty string if None
+                    provenance = file_metadata.get("metadata_provenance")
+                    if provenance:
+                        effective_metadata_dict["metadata_provenance"] = provenance
+
                     logger.debug(
-                        f"Propagating effective metadata to chunks: "
-                        f"content_type={effective_metadata_dict['effective_content_type']}, "
-                        f"tags={effective_metadata_dict['effective_tags']}, "
-                        f"provenance={effective_metadata_dict['metadata_provenance']}"
+                        f"Propagating effective metadata to chunks: {effective_metadata_dict}"
                     )
             except Exception as e:
                 logger.warning(f"Could not fetch effective metadata for {file_path_obj}: {e}")

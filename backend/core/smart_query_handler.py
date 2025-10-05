@@ -132,7 +132,9 @@ class SmartQueryHandler:
 
         # Include tenant_id and filters in cache key to prevent cross-tenant data leakage
         filter_key = str(explicit_filters) if explicit_filters else "none"
-        cache_key = f"{query}:{len(chat_history) if chat_history else 0}:tenant:{tenant_id or 'none'}:filters:{filter_key}"
+        cache_key = (
+            f"{query}:{len(chat_history) if chat_history else 0}:tenant:{tenant_id or 'none'}:filters:{filter_key}"
+        )
         if cache_key in self._query_cache:
             logger.info("Using cached results for query")
             return self._query_cache[cache_key]

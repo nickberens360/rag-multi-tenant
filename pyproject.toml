@@ -19,6 +19,7 @@ addopts = [
 markers = [
     "unit: Unit tests (fast)",
     "integration: Integration tests (slower)",
+    "e2e: End-to-end tests (complete workflows)",
     "rls: Row Level Security tests",
     "tenant: Multi-tenant tests",
 ]

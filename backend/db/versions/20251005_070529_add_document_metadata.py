@@ -11,6 +11,7 @@ taxonomy for controlled vocabulary and provenance tracking.
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -34,7 +35,7 @@ def upgrade():
             "manual_tags",
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=True,
-            server_default="'[]'::jsonb",
+            server_default=text("'[]'::jsonb"),
         ),
     )
     op.add_column(
@@ -47,7 +48,7 @@ def upgrade():
             "inferred_tags",
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=True,
-            server_default="'[]'::jsonb",
+            server_default=text("'[]'::jsonb"),
         ),
     )
     op.add_column(

@@ -204,6 +204,17 @@
                 />
               </template>
 
+              <!-- Edit Metadata button -->
+              <v-btn
+                icon="$tag"
+                size="small"
+                variant="text"
+                color="orange"
+                :disabled="loading"
+                title="Edit Metadata (Content Type & Tags)"
+                @click="editSource(item)"
+              />
+
               <!-- Reindex button -->
               <v-btn
                 icon="$refresh"
@@ -794,7 +805,11 @@ const getContentTypeColor = (type) => {
 
 // If you need to refresh (e.g., after upload/delete):
 const refreshSources = async () => {
-  await tenantStore.loadKnowledgeSources(true) // force=true
+  // Load both knowledge sources and taxonomy to ensure metadata dropdowns work
+  await Promise.all([
+    tenantStore.loadKnowledgeSources(true), // force=true
+    tenantStore.loadTaxonomy(true) // force=true to ensure fresh data
+  ])
   emit('refresh-complete')
 }
 

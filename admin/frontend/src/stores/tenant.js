@@ -177,7 +177,7 @@ export const useTenantStore = defineStore('tenant', () => {
       // This returns { files: [...], total }
       const data = await adminAPI.getKnowledgeFilesStatus({ limit: 1000 })
 
-      // Normalize to the shape expected by the UI (path, status, content_type, chunk_count, display_path)
+      // Normalize to the shape expected by the UI (path, status, metadata fields, chunk_count, display_path)
       const files = Array.isArray(data?.files) ? data.files : []
       tenantData.value.knowledgeSources = files.map(f => {
         const path = f.path || ''
@@ -191,10 +191,20 @@ export const useTenantStore = defineStore('tenant', () => {
         return {
           path,
           status: f.status || 'unknown',
-          // content_type not tracked in metadata DB; default to 'unknown'
-          content_type: f.content_type || 'unknown',
           chunk_count: f.chunk_count ?? 0,
           display_path: displayPath,
+          // Document metadata fields
+          manual_content_type: f.manual_content_type || null,
+          manual_tags: Array.isArray(f.manual_tags) ? f.manual_tags : [],
+          inferred_content_type: f.inferred_content_type || null,
+          inferred_tags: Array.isArray(f.inferred_tags) ? f.inferred_tags : [],
+          inferred_confidence: f.inferred_confidence ?? null,
+          metadata_provenance: f.metadata_provenance || null,
+          // Computed effective fields (backend provides these via COALESCE)
+          effective_content_type: f.effective_content_type || 'unknown',
+          effective_tags: Array.isArray(f.effective_tags) ? f.effective_tags : [],
+          // Legacy field for backward compatibility
+          content_type: f.effective_content_type || 'unknown',
         }
       })
 
@@ -270,8 +280,8 @@ export const useTenantStore = defineStore('tenant', () => {
 
       const data = await adminAPI.getTaxonomy()
 
-      // Taxonomy API returns array of {key, label, synonyms, active}
-      tenantData.value.taxonomy = Array.isArray(data) ? data : []
+      // Taxonomy API returns object with entries: {entries: [...], total: N, tenant_id: "..."}
+      tenantData.value.taxonomy = Array.isArray(data?.entries) ? data.entries : []
 
       console.debug(`✅ Loaded ${tenantData.value.taxonomy.length} taxonomy items`)
     } catch (err) {

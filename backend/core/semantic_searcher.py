@@ -34,7 +34,7 @@ try:
 except Exception:  # pragma: no cover - not present in all environments
     ChromaInternalError = Exception  # type: ignore
 
-from ..models.filter_models import MetadataFilter, RetrievalFilters
+from ..models.filter_models import RetrievalFilters
 from .config_v2 import AppConfig
 
 logger = logging.getLogger(__name__)

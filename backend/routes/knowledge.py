@@ -441,6 +441,19 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
         # Get tenant context for RLS
         tenant_id = getattr(request.state, "tenant_id", None)
 
+        # Get admin user context for audit logging
+        from ..core.admin_auth import get_current_admin_user
+        from ..core.audit_logger import audit_logger
+
+        admin_user = get_current_admin_user(request)
+        username = admin_user.get("username", "unknown") if admin_user else "unknown"
+        ip_address = request.client.host if request.client else "unknown"
+        user_agent = request.headers.get("User-Agent", "")
+
+        # Track old values for audit logging
+        old_values = {}
+        new_values = {}
+
         # Update manual metadata in database if provided
         if update_data.manual_content_type is not None or update_data.manual_tags is not None:
             from sqlalchemy import text
@@ -455,11 +468,13 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
                 if tenant_id:
                     session.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": str(tenant_id)})
 
-                # Check if file exists in database
+                # Check if file exists in database and get current values for audit
                 existing = session.execute(
                     text(
                         """
-                        SELECT path FROM knowledge_files
+                        SELECT path, manual_content_type, manual_tags,
+                               inferred_content_type, inferred_tags
+                        FROM knowledge_files
                         WHERE path = :path
                         """
                     ),
@@ -468,6 +483,18 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
 
                 if not existing:
                     raise HTTPException(status_code=404, detail=f"Source '{source_path}' not found in database")
+
+                # Capture old values for audit
+                old_values = {
+                    "manual_content_type": existing[1],
+                    "manual_tags": existing[2],
+                }
+
+                # Capture new values for audit
+                new_values = {
+                    "manual_content_type": update_data.manual_content_type,
+                    "manual_tags": update_data.manual_tags,
+                }
 
                 # Build update query
                 updates = []
@@ -498,6 +525,45 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
                     """
                     session.execute(text(query), params)
                     logger.info(f"Updated manual metadata for {source_path}")
+
+                    # Check if this is overriding inferred metadata
+                    inferred_content_type = existing[3]
+                    inferred_tags = existing[4]
+
+                    if update_data.manual_content_type is not None and inferred_content_type:
+                        # Log override for content_type
+                        audit_logger.log_metadata_override(
+                            username=username,
+                            file_path=source_path,
+                            inferred_value=inferred_content_type,
+                            manual_value=update_data.manual_content_type,
+                            field_name="content_type",
+                            ip_address=ip_address,
+                            user_agent=user_agent,
+                        )
+
+                    if update_data.manual_tags is not None and inferred_tags:
+                        # Log override for tags
+                        audit_logger.log_metadata_override(
+                            username=username,
+                            file_path=source_path,
+                            inferred_value=inferred_tags,
+                            manual_value=update_data.manual_tags,
+                            field_name="tags",
+                            ip_address=ip_address,
+                            user_agent=user_agent,
+                        )
+
+                    # Log manual update audit event
+                    audit_logger.log_metadata_manual_update(
+                        username=username,
+                        file_path=source_path,
+                        old_values=old_values,
+                        new_values=new_values,
+                        ip_address=ip_address,
+                        user_agent=user_agent,
+                        success=True,
+                    )
 
                     # Note: Reindex will happen automatically on next sync since we set status='discovered'
                     # The discovery/sync worker will pick up this file and reindex it
@@ -883,22 +949,26 @@ async def upload_knowledge_files(
 
 @router.post("/knowledge/metadata/infer")
 async def infer_metadata_batch(
-    request: MetadataInferenceRequest,
+    request_body: MetadataInferenceRequest,
     background_tasks: BackgroundTasks,
     tenant_context: dict = Depends(get_tenant_context),
+    fastapi_request: Request = None,
 ) -> dict:
     """
     Trigger batch metadata inference for files.
 
     Args:
-        request: Inference request with optional paths, dry_run, and limit
+        request_body: Inference request with optional paths, dry_run, and limit
         background_tasks: FastAPI background tasks
         tenant_context: Tenant context from middleware
+        fastapi_request: FastAPI request object for audit context
 
     Returns:
         Status of the inference job
     """
     try:
+        from ..core.admin_auth import get_current_admin_user
+        from ..core.audit_logger import audit_logger
         from ..core.knowledge_index_db import KnowledgeIndexDB
         from ..core.metadata_inference import infer_metadata_background
 
@@ -906,13 +976,19 @@ async def infer_metadata_batch(
         if not tenant_id:
             raise HTTPException(status_code=400, detail="Tenant context not available")
 
+        # Get admin user context for audit logging
+        admin_user = get_current_admin_user(fastapi_request) if fastapi_request else None
+        username = admin_user.get("username", "unknown") if admin_user else "unknown"
+        ip_address = fastapi_request.client.host if fastapi_request and fastapi_request.client else "unknown"
+        user_agent = fastapi_request.headers.get("User-Agent", "") if fastapi_request else ""
+
         db = KnowledgeIndexDB()
 
         # Determine which files to process
-        if request.paths:
+        if request_body.paths:
             # Specific paths provided
             files_to_process = []
-            for path in request.paths:
+            for path in request_body.paths:
                 file_metadata = db.get_file_metadata(path, tenant_id=tenant_id)
                 if file_metadata:
                     files_to_process.append(file_metadata)
@@ -924,10 +1000,20 @@ async def infer_metadata_batch(
             ]
 
         # Apply limit if provided
-        if request.limit:
-            files_to_process = files_to_process[: request.limit]
+        if request_body.limit:
+            files_to_process = files_to_process[: request_body.limit]
 
-        if request.dry_run:
+        # Log batch inference audit event
+        audit_logger.log_metadata_batch_inference(
+            username=username,
+            file_count=len(files_to_process),
+            dry_run=request_body.dry_run,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            success=True,
+        )
+
+        if request_body.dry_run:
             # Return what would be processed without actually inferring
             return {
                 "success": True,
@@ -969,4 +1055,197 @@ async def infer_metadata_batch(
         raise
     except Exception as e:
         logger.error(f"Failed to trigger metadata inference: {e}")
+        # Log failed audit event
+        if fastapi_request:
+            from ..core.admin_auth import get_current_admin_user
+            from ..core.audit_logger import audit_logger
+
+            admin_user = get_current_admin_user(fastapi_request)
+            username = admin_user.get("username", "unknown") if admin_user else "unknown"
+            ip_address = fastapi_request.client.host if fastapi_request.client else "unknown"
+            user_agent = fastapi_request.headers.get("User-Agent", "")
+
+            audit_logger.log_metadata_batch_inference(
+                username=username,
+                file_count=0,
+                dry_run=request_body.dry_run,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                success=False,
+                error_message=str(e),
+            )
         raise HTTPException(status_code=500, detail="Failed to trigger metadata inference")
+
+
+@router.get("/knowledge/metadata/metrics")
+async def get_metadata_metrics(
+    request: Request,
+    tenant_context: dict = Depends(get_tenant_context),
+) -> dict:
+    """
+    Get metadata inference and management metrics.
+
+    Returns aggregated statistics about:
+    - Inference coverage (% of files with metadata)
+    - Inference accuracy (override rate)
+    - Confidence distribution
+    - User activity
+
+    Args:
+        request: FastAPI request object
+        tenant_context: Tenant context from middleware
+
+    Returns:
+        Dictionary with metadata metrics
+    """
+    try:
+        from sqlalchemy import text
+
+        from ..core.db_session import get_db_session_sync
+
+        tenant_id = tenant_context.get("tenant_id")
+        if not tenant_id:
+            raise HTTPException(status_code=400, detail="Tenant context not available")
+
+        with get_db_session_sync() as session:
+            if session is None:
+                raise HTTPException(status_code=503, detail="Database not available")
+
+            # Set tenant context for RLS
+            session.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": str(tenant_id)})
+
+            # Get total files and files with metadata
+            coverage_stats = session.execute(
+                text(
+                    """
+                    SELECT
+                        COUNT(*) as total_files,
+                        COUNT(inferred_content_type) as files_with_inferred,
+                        COUNT(manual_content_type) as files_with_manual,
+                        COUNT(CASE WHEN manual_content_type IS NOT NULL OR inferred_content_type IS NOT NULL THEN 1 END) as files_with_any_metadata
+                    FROM knowledge_files
+                    WHERE tenant_id = :tenant_id
+                    """
+                ),
+                {"tenant_id": tenant_id},
+            ).fetchone()
+
+            # Get override statistics (manual overwrites inferred)
+            override_stats = session.execute(
+                text(
+                    """
+                    SELECT
+                        COUNT(*) as total_overrides
+                    FROM knowledge_files
+                    WHERE tenant_id = :tenant_id
+                      AND manual_content_type IS NOT NULL
+                      AND inferred_content_type IS NOT NULL
+                      AND manual_content_type != inferred_content_type
+                    """
+                ),
+                {"tenant_id": tenant_id},
+            ).fetchone()
+
+            # Get confidence distribution
+            confidence_stats = session.execute(
+                text(
+                    """
+                    SELECT
+                        AVG(inferred_confidence) as avg_confidence,
+                        MIN(inferred_confidence) as min_confidence,
+                        MAX(inferred_confidence) as max_confidence,
+                        COUNT(CASE WHEN inferred_confidence >= 0.8 THEN 1 END) as high_confidence_count,
+                        COUNT(CASE WHEN inferred_confidence >= 0.5 AND inferred_confidence < 0.8 THEN 1 END) as medium_confidence_count,
+                        COUNT(CASE WHEN inferred_confidence < 0.5 THEN 1 END) as low_confidence_count
+                    FROM knowledge_files
+                    WHERE tenant_id = :tenant_id
+                      AND inferred_confidence IS NOT NULL
+                    """
+                ),
+                {"tenant_id": tenant_id},
+            ).fetchone()
+
+            # Get content type distribution
+            content_type_dist = session.execute(
+                text(
+                    """
+                    SELECT
+                        COALESCE(manual_content_type, inferred_content_type) as content_type,
+                        COUNT(*) as count
+                    FROM knowledge_files
+                    WHERE tenant_id = :tenant_id
+                      AND (manual_content_type IS NOT NULL OR inferred_content_type IS NOT NULL)
+                    GROUP BY COALESCE(manual_content_type, inferred_content_type)
+                    ORDER BY count DESC
+                    LIMIT 10
+                    """
+                ),
+                {"tenant_id": tenant_id},
+            ).fetchall()
+
+            # Get recent audit activity from security_events
+            recent_activity = session.execute(
+                text(
+                    """
+                    SELECT
+                        event_type,
+                        COUNT(*) as count,
+                        COUNT(DISTINCT identifier) as unique_users
+                    FROM security_events
+                    WHERE tenant_id = :tenant_id
+                      AND event_type LIKE 'audit_metadata_%'
+                      AND created_at >= NOW() - INTERVAL '7 days'
+                    GROUP BY event_type
+                    ORDER BY count DESC
+                    """
+                ),
+                {"tenant_id": tenant_id},
+            ).fetchall()
+
+            # Calculate metrics
+            total_files = coverage_stats[0] or 0
+            files_with_inferred = coverage_stats[1] or 0
+            files_with_manual = coverage_stats[2] or 0
+            files_with_any_metadata = coverage_stats[3] or 0
+
+            coverage_percentage = (files_with_any_metadata / total_files * 100) if total_files > 0 else 0
+            override_count = override_stats[0] or 0
+            override_rate = (override_count / files_with_inferred * 100) if files_with_inferred > 0 else 0
+
+            avg_confidence = float(confidence_stats[0]) if confidence_stats[0] else 0.0
+            min_confidence = float(confidence_stats[1]) if confidence_stats[1] else 0.0
+            max_confidence = float(confidence_stats[2]) if confidence_stats[2] else 0.0
+
+            return {
+                "coverage": {
+                    "total_files": total_files,
+                    "files_with_metadata": files_with_any_metadata,
+                    "files_with_inferred": files_with_inferred,
+                    "files_with_manual": files_with_manual,
+                    "coverage_percentage": round(coverage_percentage, 2),
+                },
+                "inference_accuracy": {
+                    "total_inferred": files_with_inferred,
+                    "manual_overrides": override_count,
+                    "override_rate_percentage": round(override_rate, 2),
+                },
+                "confidence_distribution": {
+                    "average": round(avg_confidence, 3),
+                    "min": round(min_confidence, 3),
+                    "max": round(max_confidence, 3),
+                    "high_confidence_count": confidence_stats[4] or 0,
+                    "medium_confidence_count": confidence_stats[5] or 0,
+                    "low_confidence_count": confidence_stats[6] or 0,
+                },
+                "content_type_distribution": [{"content_type": row[0], "count": row[1]} for row in content_type_dist],
+                "recent_activity": [
+                    {"event_type": row[0].replace("audit_", ""), "count": row[1], "unique_users": row[2]}
+                    for row in recent_activity
+                ],
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get metadata metrics: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get metadata metrics")

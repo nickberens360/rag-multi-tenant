@@ -72,6 +72,12 @@ class AuditAction(Enum):
     QUERY_FEEDBACK = "query_feedback"
     QUERY_DELETE = "query_delete"
 
+    # Metadata operations (document metadata inference and management)
+    METADATA_MANUAL_UPDATE = "metadata_manual_update"
+    METADATA_INFERENCE_COMPLETE = "metadata_inference_complete"
+    METADATA_OVERRIDE = "metadata_override"
+    METADATA_BATCH_INFERENCE = "metadata_batch_inference"
+
     # Security operations
     SECURITY_SCAN = "security_scan"
     ACCESS_GRANT = "access_grant"
@@ -110,6 +116,8 @@ class AuditLogger:
             AuditAction.KNOWLEDGE_DELETE,
             AuditAction.SETTING_CHANGE,
             AuditAction.ACCESS_GRANT,
+            AuditAction.METADATA_MANUAL_UPDATE,
+            AuditAction.METADATA_OVERRIDE,
         }
 
     def log_action(
@@ -381,6 +389,159 @@ class AuditLogger:
         details = {"setting": setting_name, "old_value": str(old_value), "new_value": str(new_value)}
         self.log_action(
             AuditAction.CONFIG_UPDATE, username, details, setting_name, ip_address, user_agent, success, error_message
+        )
+
+    def log_metadata_manual_update(
+        self,
+        username: str,
+        file_path: str,
+        old_values: Dict[str, Any],
+        new_values: Dict[str, Any],
+        ip_address: str,
+        user_agent: str,
+        success: bool = True,
+        error_message: Optional[str] = None,
+    ) -> None:
+        """
+        Log manual metadata update by admin.
+
+        Args:
+            username: Admin username performing the update
+            file_path: Path to the file being updated
+            old_values: Previous metadata values
+            new_values: New metadata values
+            ip_address: IP address of the admin
+            user_agent: User agent string
+            success: Whether the operation succeeded
+            error_message: Error message if operation failed
+        """
+        details = {
+            "old_values": old_values,
+            "new_values": new_values,
+            "provenance": "manual",
+        }
+        self.log_action(
+            AuditAction.METADATA_MANUAL_UPDATE,
+            username,
+            details,
+            file_path,
+            ip_address,
+            user_agent,
+            success,
+            error_message,
+        )
+
+    def log_metadata_inference_complete(
+        self,
+        file_path: str,
+        inferred_values: Dict[str, Any],
+        confidence: float,
+        model_used: str,
+        tenant_id: Optional[str] = None,
+    ) -> None:
+        """
+        Log completion of LLM metadata inference.
+
+        Args:
+            file_path: Path to the file that was inferred
+            inferred_values: Values inferred by the LLM
+            confidence: Confidence score (0.0-1.0)
+            model_used: Model identifier used for inference
+            tenant_id: Tenant ID for context
+        """
+        details = {
+            "inferred_values": inferred_values,
+            "confidence": confidence,
+            "model_used": model_used,
+            "provenance": "inferred",
+        }
+        # System action, use 'system' as username
+        self.log_action(
+            AuditAction.METADATA_INFERENCE_COMPLETE,
+            "system",
+            details,
+            file_path,
+            ip_address=None,
+            user_agent=None,
+            success=True,
+            error_message=None,
+        )
+
+    def log_metadata_override(
+        self,
+        username: str,
+        file_path: str,
+        inferred_value: Any,
+        manual_value: Any,
+        field_name: str,
+        ip_address: str,
+        user_agent: str,
+    ) -> None:
+        """
+        Log when manual metadata overwrites inferred metadata.
+
+        Args:
+            username: Admin username performing the override
+            file_path: Path to the file being updated
+            inferred_value: Value that was inferred by LLM
+            manual_value: Value manually set by admin
+            field_name: Name of the field being overridden
+            ip_address: IP address of the admin
+            user_agent: User agent string
+        """
+        details = {
+            "field_name": field_name,
+            "inferred_value": str(inferred_value),
+            "manual_value": str(manual_value),
+            "action": "override",
+        }
+        self.log_action(
+            AuditAction.METADATA_OVERRIDE,
+            username,
+            details,
+            file_path,
+            ip_address,
+            user_agent,
+            success=True,
+            error_message=None,
+        )
+
+    def log_metadata_batch_inference(
+        self,
+        username: str,
+        file_count: int,
+        dry_run: bool,
+        ip_address: str,
+        user_agent: str,
+        success: bool = True,
+        error_message: Optional[str] = None,
+    ) -> None:
+        """
+        Log batch metadata inference trigger.
+
+        Args:
+            username: Admin username triggering the batch inference
+            file_count: Number of files to be processed
+            dry_run: Whether this is a dry run
+            ip_address: IP address of the admin
+            user_agent: User agent string
+            success: Whether the operation succeeded
+            error_message: Error message if operation failed
+        """
+        details = {
+            "file_count": file_count,
+            "dry_run": dry_run,
+            "action": "batch_inference_trigger",
+        }
+        self.log_action(
+            AuditAction.METADATA_BATCH_INFERENCE,
+            username,
+            details,
+            f"batch:{file_count}_files",
+            ip_address,
+            user_agent,
+            success,
+            error_message,
         )
 
     def get_audit_summary(self, username: Optional[str] = None, hours: int = 24) -> Dict[str, Any]:
