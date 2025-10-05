@@ -12,7 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, BackgroundTasks, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -195,6 +195,7 @@ async def upload_knowledge_files(
             # Set manual metadata if provided
             if metadata_content_type or metadata_tags:
                 from sqlalchemy import text
+
                 from ..core.db_session import get_db_session_sync
 
                 try:
@@ -226,7 +227,9 @@ async def upload_knowledge_files(
                                     "tags": tags_list,
                                 },
                             )
-                            logger.info(f"Set manual metadata for {full_path}: type={metadata_content_type}, tags={tags_list}")
+                            logger.info(
+                                f"Set manual metadata for {full_path}: type={metadata_content_type}, tags={tags_list}"
+                            )
                 except Exception as e:
                     logger.warning(f"Failed to set manual metadata for {full_path}: {e}")
             else:
@@ -254,8 +257,14 @@ async def upload_knowledge_files(
 
             # Trigger background reindex if requested
             try:
-                if index_now and hasattr(request.app.state, "unified_retriever") and request.app.state.unified_retriever is not None:
-                    background_tasks.add_task(_reindex_file_task, str(full_path), tenant_id, request.app.state.unified_retriever)
+                if (
+                    index_now
+                    and hasattr(request.app.state, "unified_retriever")
+                    and request.app.state.unified_retriever is not None
+                ):
+                    background_tasks.add_task(
+                        _reindex_file_task, str(full_path), tenant_id, request.app.state.unified_retriever
+                    )
                     logger.info(f"Queued background reindex for {full_path}")
             except Exception as e:
                 logger.warning(f"Failed to queue background reindex for {full_path}: {e}")

@@ -444,6 +444,7 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
         # Update manual metadata in database if provided
         if update_data.manual_content_type is not None or update_data.manual_tags is not None:
             from sqlalchemy import text
+
             from ..core.db_session import get_db_session_sync
 
             with get_db_session_sync() as session:
@@ -481,12 +482,14 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
                     params["tags"] = update_data.manual_tags
 
                 if updates:
-                    updates.extend([
-                        "metadata_provenance = 'manual'",
-                        "metadata_updated_at = NOW()",
-                        "metadata_version = metadata_version + 1",
-                        "status = 'discovered'",  # Mark for reindex
-                    ])
+                    updates.extend(
+                        [
+                            "metadata_provenance = 'manual'",
+                            "metadata_updated_at = NOW()",
+                            "metadata_version = metadata_version + 1",
+                            "status = 'discovered'",  # Mark for reindex
+                        ]
+                    )
 
                     query = f"""
                         UPDATE knowledge_files
@@ -496,15 +499,9 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
                     session.execute(text(query), params)
                     logger.info(f"Updated manual metadata for {source_path}")
 
-                    # Trigger reindex in background to propagate metadata to chunks
-                    try:
-                        if hasattr(request.app.state, "unified_retriever") and request.app.state.unified_retriever:
-                            from ..core.background_tasks import BackgroundTasks
-                            bg_tasks = BackgroundTasks()
-                            bg_tasks.add_task(_reindex_file_task, source_path, tenant_id, request.app.state.unified_retriever)
-                            logger.info(f"Queued reindex for {source_path} to propagate metadata")
-                    except Exception as e:
-                        logger.warning(f"Failed to queue reindex: {e}")
+                    # Note: Reindex will happen automatically on next sync since we set status='discovered'
+                    # The discovery/sync worker will pick up this file and reindex it
+                    logger.info(f"Marked {source_path} for reindex by setting status='discovered'")
 
         # Also update vector store metadata for backward compatibility
         if update_data.content_type is not None:
@@ -923,9 +920,7 @@ async def infer_metadata_batch(
             # Get all files without manual metadata
             all_files = db.list_files_with_metadata(tenant_id=tenant_id, limit=10000)
             files_to_process = [
-                f
-                for f in all_files
-                if f.get("manual_content_type") is None and f.get("manual_tags") in (None, [])
+                f for f in all_files if f.get("manual_content_type") is None and f.get("manual_tags") in (None, [])
             ]
 
         # Apply limit if provided

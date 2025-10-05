@@ -233,6 +233,35 @@ class UnifiedRetriever:
 
             # Add rich metadata to each chunk (aligned with ContentIndexer.process_directory)
             file_hash = self.content_indexer.compute_file_hash(file_path_obj)
+
+            # Fetch effective metadata from knowledge_files table for propagation
+            effective_metadata_dict = {}
+            try:
+                from .knowledge_index_db import KnowledgeIndexDB
+
+                # Extract tenant_id from file path for proper metadata lookup
+                src_path = str(file_path_obj)
+                tenant_slug = self._parse_tenant_slug_from_path(src_path)
+                tenant_id = self._resolve_tenant_id(tenant_slug) if tenant_slug else None
+
+                db = KnowledgeIndexDB()
+                file_metadata = db.get_file_metadata(src_path, tenant_id=tenant_id)
+                if file_metadata:
+                    # Extract effective metadata for propagation to chunks
+                    effective_metadata_dict = {
+                        "effective_content_type": file_metadata.get("effective_content_type"),
+                        "effective_tags": file_metadata.get("effective_tags", []),
+                        "metadata_provenance": file_metadata.get("metadata_provenance", "inferred"),
+                    }
+                    logger.debug(
+                        f"Propagating effective metadata to chunks: "
+                        f"content_type={effective_metadata_dict['effective_content_type']}, "
+                        f"tags={effective_metadata_dict['effective_tags']}, "
+                        f"provenance={effective_metadata_dict['metadata_provenance']}"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not fetch effective metadata for {file_path_obj}: {e}")
+
             for chunk_index, chunk in enumerate(chunks):
                 if use_per_chunk_fallback:
                     base_metadata = self.content_indexer.extract_content_metadata(
@@ -259,6 +288,10 @@ class UnifiedRetriever:
 
                 chunk.metadata.update(base_metadata)
                 chunk.metadata.update(enhanced_metadata)
+
+                # Propagate effective metadata from knowledge_files to chunk
+                if effective_metadata_dict:
+                    chunk.metadata.update(effective_metadata_dict)
 
             # Stamp tenant metadata and add to vector store
             if chunks:

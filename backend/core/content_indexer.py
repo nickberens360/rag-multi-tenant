@@ -349,6 +349,37 @@ class ContentIndexer:
                         except Exception as e:
                             logger.debug(f"Heterogeneity detection failed for {file_path.name}: {e}")
 
+                    # Fetch effective metadata from knowledge_files table for propagation
+                    effective_metadata_dict = {}
+                    try:
+                        from .knowledge_index_db import KnowledgeIndexDB
+
+                        # Extract tenant info from file path for proper metadata lookup
+                        src_path = str(file_path)
+                        # Import helper method to parse tenant slug from path
+                        from .unified_retriever import UnifiedRetriever
+
+                        tenant_slug = UnifiedRetriever._parse_tenant_slug_from_path(src_path)
+                        tenant_id = UnifiedRetriever._resolve_tenant_id(tenant_slug) if tenant_slug else None
+
+                        db = KnowledgeIndexDB()
+                        file_metadata = db.get_file_metadata(src_path, tenant_id=tenant_id)
+                        if file_metadata:
+                            # Extract effective metadata for propagation to chunks
+                            effective_metadata_dict = {
+                                "effective_content_type": file_metadata.get("effective_content_type"),
+                                "effective_tags": file_metadata.get("effective_tags", []),
+                                "metadata_provenance": file_metadata.get("metadata_provenance", "inferred"),
+                            }
+                            logger.debug(
+                                f"Propagating effective metadata to chunks for {file_path.name}: "
+                                f"content_type={effective_metadata_dict['effective_content_type']}, "
+                                f"tags={effective_metadata_dict['effective_tags']}, "
+                                f"provenance={effective_metadata_dict['metadata_provenance']}"
+                            )
+                    except Exception as e:
+                        logger.warning(f"Could not fetch effective metadata for {file_path}: {e}")
+
                     # Add rich metadata to each chunk including enhanced RAG metadata
                     for chunk_index, chunk in enumerate(chunks):
                         if use_per_chunk_fallback:
@@ -374,6 +405,10 @@ class ContentIndexer:
                         # Merge all metadata
                         chunk.metadata.update(base_metadata)
                         chunk.metadata.update(enhanced_metadata)
+
+                        # Propagate effective metadata from knowledge_files to chunk
+                        if effective_metadata_dict:
+                            chunk.metadata.update(effective_metadata_dict)
 
                     all_documents.extend(chunks)
                     files_processed += 1

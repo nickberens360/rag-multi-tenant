@@ -12,10 +12,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from anthropic import Anthropic
-
-from .config_v2 import AppConfig
-from .db_session import get_db_session_sync
 from sqlalchemy import text
+
+from .db_session import get_db_session_sync
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +269,8 @@ CONFIDENCE: 0.92
                             inferred_confidence = :confidence,
                             metadata_updated_at = NOW(),
                             metadata_updated_by = :updated_by,
-                            metadata_version = metadata_version + 1
+                            metadata_version = metadata_version + 1,
+                            status = 'discovered'
                         WHERE path = :path
                           AND tenant_id = :tenant_id
                         """
@@ -285,7 +285,7 @@ CONFIDENCE: 0.92
                     },
                 )
 
-                logger.info(f"Updated inferred metadata for {path}")
+                logger.info(f"Updated inferred metadata for {path} and marked for reindex")
                 return True
 
         except Exception as e:
