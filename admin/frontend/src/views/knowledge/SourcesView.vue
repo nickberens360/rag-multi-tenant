@@ -131,15 +131,38 @@
             </div>
           </template>
           <template #[`item.content_type`]="{ item }">
-            <div class="d-flex flex-wrap gap-1">
+            <div class="d-flex flex-wrap gap-1 align-center">
               <v-chip
-                v-for="type in getContentTypes(item.content_type)"
-                :key="type"
-                :color="getContentTypeColor(type)"
+                v-if="item.effective_content_type || item.content_type"
+                :color="getContentTypeColor(item.effective_content_type || item.content_type)"
                 size="small"
               >
-                {{ type }}
+                {{ item.effective_content_type || item.content_type || 'unknown' }}
               </v-chip>
+              <v-chip
+                v-if="item.metadata_provenance"
+                :color="item.metadata_provenance === 'manual' ? 'primary' : 'secondary'"
+                size="x-small"
+                variant="outlined"
+              >
+                {{ item.metadata_provenance === 'manual' ? 'Manual' : 'Inferred' }}
+              </v-chip>
+            </div>
+          </template>
+          <template #[`item.tags`]="{ item }">
+            <div class="d-flex flex-wrap gap-1">
+              <v-chip
+                v-for="tag in getEffectiveTags(item)"
+                :key="tag"
+                size="x-small"
+                variant="tonal"
+              >
+                {{ tag }}
+              </v-chip>
+              <span
+                v-if="!getEffectiveTags(item).length"
+                class="text-caption text-disabled"
+              >No tags</span>
             </div>
           </template>
           <template #[`item.chunk_count`]="{ item }">
@@ -211,11 +234,11 @@
     <!-- Edit Source Dialog -->
     <v-dialog
       v-model="showEditDialog"
-      max-width="500px"
+      max-width="600px"
     >
       <v-card>
         <v-card-title class="text-h5">
-          Edit Source
+          Edit Source Metadata
         </v-card-title>
         <v-card-text>
           <v-text-field
@@ -223,13 +246,67 @@
             :model-value="selectedSource?.path"
             readonly
             variant="outlined"
-            class="mb-4"
+            density="compact"
+            class="mb-3"
           />
-          <v-text-field
+
+          <!-- Current Metadata Display -->
+          <v-alert
+            v-if="selectedSource"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            <div class="text-caption">
+              <strong>Current:</strong>
+              {{ selectedSource.effective_content_type || 'No content type' }}
+              <v-chip
+                v-if="selectedSource.metadata_provenance"
+                :color="selectedSource.metadata_provenance === 'manual' ? 'primary' : 'secondary'"
+                size="x-small"
+                variant="outlined"
+                class="ms-2"
+              >
+                {{ selectedSource.metadata_provenance === 'manual' ? 'Manual' : 'Inferred' }}
+              </v-chip>
+            </div>
+            <div
+              v-if="getEffectiveTags(selectedSource).length"
+              class="text-caption mt-1"
+            >
+              <strong>Tags:</strong> {{ getEffectiveTags(selectedSource).join(', ') }}
+            </div>
+          </v-alert>
+
+          <h3 class="text-subtitle-2 mb-3">
+            Update Metadata (Manual Override)
+          </h3>
+
+          <v-select
             v-model="editedContentType"
             label="Content Type"
+            :items="contentTypeOptions"
+            item-title="label"
+            item-value="key"
             variant="outlined"
-            placeholder="e.g., technical, experience, skills, about"
+            clearable
+            hint="Select a content type to override current classification"
+            persistent-hint
+            class="mb-3"
+          />
+
+          <v-combobox
+            v-model="editedTags"
+            label="Tags"
+            :items="availableTags"
+            variant="outlined"
+            multiple
+            chips
+            closable-chips
+            clearable
+            hint="Add or remove tags (will override inferred tags)"
+            persistent-hint
           />
         </v-card-text>
         <v-card-actions>
@@ -316,6 +393,39 @@
               show-size
               counter
               :rules="fileRules"
+            />
+          </div>
+
+          <!-- Metadata Fields -->
+          <div class="mb-4">
+            <h3 class="text-subtitle-1 mb-3">
+              Optional Metadata
+            </h3>
+
+            <v-select
+              v-model="uploadMetadata.contentType"
+              label="Content Type"
+              :items="contentTypeOptions"
+              item-title="label"
+              item-value="key"
+              variant="outlined"
+              clearable
+              hint="Categorize the content type of uploaded files"
+              persistent-hint
+              class="mb-3"
+            />
+
+            <v-combobox
+              v-model="uploadMetadata.tags"
+              label="Tags"
+              :items="availableTags"
+              variant="outlined"
+              multiple
+              chips
+              closable-chips
+              clearable
+              hint="Add relevant tags (select from suggestions or create new)"
+              persistent-hint
             />
           </div>
 
@@ -435,7 +545,8 @@ const tenantStore = useTenantStore()
 // Use store's cached knowledge sources with proper reactivity
 const {
   currentTenantKnowledgeSources: sources,
-  isLoadingKnowledgeSources: storeLoading
+  isLoadingKnowledgeSources: storeLoading,
+  currentTenantTaxonomy: taxonomy
 } = storeToRefs(tenantStore)
 
 // Local loading state for operations (separate from store's loading state)
@@ -451,10 +562,17 @@ const showDeleteDialog = ref(false)
 const showFileEditorModal = ref(false)
 const selectedSource = ref(null)
 const editedContentType = ref('')
+const editedTags = ref([])
 const selectedFilename = ref('')
 
 // Upload dialog state
 const showUploadDialog = ref(false)
+
+// Upload metadata state
+const uploadMetadata = ref({
+  contentType: null,
+  tags: []
+})
 
 // Notifications
 const { showSuccess, showError, showInfo, showWarning } = useNotifications()
@@ -479,6 +597,7 @@ const sourceHeaders = [
   { title: 'Source Path', key: 'path', sortable: true },
   { title: 'Status', key: 'status', sortable: true },
   { title: 'Content Type', key: 'content_type', sortable: true },
+  { title: 'Tags', key: 'tags', sortable: false },
   { title: 'Chunks', key: 'chunk_count', sortable: true },
   { title: 'Actions', key: 'actions', sortable: false, width: '190px' }
 ]
@@ -488,6 +607,39 @@ const fileRules = [
   files => !files || files.length <= 10 || 'Maximum 10 files at once',
   files => !files || files.every(file => file.size <= 50 * 1024 * 1024) || 'Files must be smaller than 50MB'
 ]
+
+// Computed properties for taxonomy-based options
+const contentTypeOptions = computed(() => {
+  if (!taxonomy.value || taxonomy.value.length === 0) return []
+
+  // Filter active content types only
+  return taxonomy.value
+    .filter(item => item.active)
+    .map(item => ({
+      key: item.key,
+      label: item.label || item.key
+    }))
+})
+
+const availableTags = computed(() => {
+  if (!taxonomy.value || taxonomy.value.length === 0) return []
+
+  // Extract all tags from taxonomy (synonyms can be used as tags)
+  const tags = new Set()
+
+  taxonomy.value.forEach(item => {
+    if (item.active) {
+      // Add the main key as a tag option
+      tags.add(item.key)
+      // Add synonyms as tag options
+      if (Array.isArray(item.synonyms)) {
+        item.synonyms.forEach(syn => tags.add(syn))
+      }
+    }
+  })
+
+  return Array.from(tags).sort()
+})
 
 // Notification helper (now uses global toasts)
 const showAlert = (message, type = 'info') => {
@@ -519,6 +671,16 @@ const uploadFiles = async () => {
     const formData = new FormData()
     for (const file of selectedFiles.value) {
       formData.append('files', file)
+    }
+
+    // Add metadata fields if provided
+    if (uploadMetadata.value.contentType) {
+      formData.append('metadata_content_type', uploadMetadata.value.contentType)
+    }
+
+    if (uploadMetadata.value.tags && uploadMetadata.value.tags.length > 0) {
+      // Convert array to comma-separated string
+      formData.append('metadata_tags', uploadMetadata.value.tags.join(','))
     }
 
     // Request immediate indexing on upload
@@ -562,6 +724,11 @@ const cancelUpload = () => {
     completed: 0,
     total: 0
   }
+  // Reset metadata
+  uploadMetadata.value = {
+    contentType: null,
+    tags: []
+  }
   stopIndexingPoll()
 }
 
@@ -591,6 +758,22 @@ const getContentTypes = (contentTypeStr) => {
     return ['unknown']
   }
   return contentTypeStr.split(',').map(type => type.trim()).filter(type => type.length > 0)
+}
+
+const getEffectiveTags = (item) => {
+  // Use effective_tags if available, otherwise fall back to tags
+  const tags = item.effective_tags || item.tags || []
+
+  if (Array.isArray(tags)) {
+    return tags
+  }
+
+  // Handle comma-separated string format
+  if (typeof tags === 'string' && tags.length > 0) {
+    return tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+  }
+
+  return []
 }
 
 const getContentTypeColor = (type) => {
@@ -627,7 +810,13 @@ watch(() => props.refreshTrigger, (newValue, oldValue) => {
 
 const editSource = (source) => {
   selectedSource.value = source
-  editedContentType.value = source.content_type || ''
+  // Use manual metadata if available, otherwise use effective metadata
+  editedContentType.value = source.manual_content_type || source.effective_content_type || ''
+
+  // Get effective tags as array
+  const tags = getEffectiveTags(source)
+  editedTags.value = source.manual_tags || tags || []
+
   showEditDialog.value = true
 }
 
@@ -641,9 +830,23 @@ const saveEdit = async () => {
 
   try {
     localLoading.value = true
-    await adminAPI.updateKnowledgeSource(selectedSource.value.path, {
-      content_type: editedContentType.value
-    })
+
+    // Build update payload
+    const updateData = {}
+
+    // Only send content_type if it has a value
+    if (editedContentType.value) {
+      updateData.manual_content_type = editedContentType.value
+    }
+
+    // Only send tags if array has items
+    if (editedTags.value && editedTags.value.length > 0) {
+      updateData.manual_tags = editedTags.value
+    }
+
+    await adminAPI.updateKnowledgeSource(selectedSource.value.path, updateData)
+
+    showSuccess('Metadata updated successfully')
 
     // Refresh from server to avoid mutating store-computed data directly
     await tenantStore.loadKnowledgeSources(true)
@@ -693,6 +896,7 @@ const cancelEdit = () => {
   showEditDialog.value = false
   selectedSource.value = null
   editedContentType.value = ''
+  editedTags.value = []
 }
 
 const cancelDelete = () => {

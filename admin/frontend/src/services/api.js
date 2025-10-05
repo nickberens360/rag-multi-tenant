@@ -1040,6 +1040,17 @@ class AdminAPI {
     }
   }
 
+  // Get tenant's controlled vocabulary (taxonomy)
+  async getTaxonomy() {
+    try {
+      const response = await this.client.get('/taxonomy')
+      return response
+    } catch (error) {
+      console.error('Failed to get taxonomy:', error)
+      throw error
+    }
+  }
+
   async uploadTaxonomyFallback(file) {
     try {
       const form = new FormData()

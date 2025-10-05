@@ -28,6 +28,7 @@ export const useTenantStore = defineStore('tenant', () => {
     knowledgeSources: [],    // Used in: SourcesView, IndexedDocsView, Dashboard
     knowledgeStats: null,    // Used in: IndexedDocsView, Dashboard
     indexedDocuments: [],    // Used in: DocumentsView
+    taxonomy: [],            // Controlled vocabulary for metadata
   })
 
   // Loading states per data type
@@ -35,6 +36,7 @@ export const useTenantStore = defineStore('tenant', () => {
     knowledgeSources: false,
     knowledgeStats: false,
     indexedDocuments: false,
+    taxonomy: false,
   })
 
   // Error states per data type
@@ -42,6 +44,7 @@ export const useTenantStore = defineStore('tenant', () => {
     knowledgeSources: null,
     knowledgeStats: null,
     indexedDocuments: null,
+    taxonomy: null,
   })
 
   // Getters
@@ -78,6 +81,10 @@ export const useTenantStore = defineStore('tenant', () => {
 
   const currentTenantIndexedDocuments = computed(() =>
     hasTenant.value ? tenantData.value.indexedDocuments : []
+  )
+
+  const currentTenantTaxonomy = computed(() =>
+    hasTenant.value ? tenantData.value.taxonomy : []
   )
 
   // Loading state getters
@@ -251,6 +258,31 @@ export const useTenantStore = defineStore('tenant', () => {
     }
   }
 
+  const loadTaxonomy = async (force = false) => {
+    if (!currentTenant.value?.slug) return
+    if (dataLoading.value.taxonomy && !force) return
+
+    dataLoading.value.taxonomy = true
+    dataErrors.value.taxonomy = null
+
+    try {
+      console.debug(`Loading taxonomy for tenant: ${currentTenant.value.slug}`)
+
+      const data = await adminAPI.getTaxonomy()
+
+      // Taxonomy API returns array of {key, label, synonyms, active}
+      tenantData.value.taxonomy = Array.isArray(data) ? data : []
+
+      console.debug(`✅ Loaded ${tenantData.value.taxonomy.length} taxonomy items`)
+    } catch (err) {
+      console.error('Failed to load taxonomy:', err)
+      dataErrors.value.taxonomy = adminAPI.formatError(err)
+      tenantData.value.taxonomy = []
+    } finally {
+      dataLoading.value.taxonomy = false
+    }
+  }
+
   // Composite Loading Functions
   // Load all tenant data (no caching, always fresh)
   const loadTenantData = async (force = false) => {
@@ -266,6 +298,7 @@ export const useTenantStore = defineStore('tenant', () => {
       loadKnowledgeSources(force),
       loadKnowledgeStats(force),
       loadIndexedDocuments(force),
+      loadTaxonomy(force),
     ])
 
     console.log('✅ Tenant data loaded')
@@ -278,7 +311,10 @@ export const useTenantStore = defineStore('tenant', () => {
     const name = String(viewName || '').toLowerCase()
     try {
       if (name === 'knowledge-sources') {
-        await loadKnowledgeSources()
+        await Promise.all([
+          loadKnowledgeSources(),
+          loadTaxonomy(),
+        ])
         return
       }
       if (name === 'knowledge-documents') {
@@ -316,6 +352,7 @@ export const useTenantStore = defineStore('tenant', () => {
       knowledgeSources: [],
       knowledgeStats: null,
       indexedDocuments: [],
+      taxonomy: [],
     }
 
     // Reset error states
@@ -481,6 +518,7 @@ export const useTenantStore = defineStore('tenant', () => {
     currentTenantKnowledgeSources,
     currentTenantKnowledgeStats,
     currentTenantIndexedDocuments,
+    currentTenantTaxonomy,
     isLoadingKnowledgeSources,
     isLoadingKnowledgeStats,
     isLoadingIndexedDocuments,
@@ -498,6 +536,7 @@ export const useTenantStore = defineStore('tenant', () => {
     loadKnowledgeSources,
     loadKnowledgeStats,
     loadIndexedDocuments,
+    loadTaxonomy,
     loadDataForView,
     clearTenantData,
   }
