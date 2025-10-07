@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "updated_at": "2025-10-07",
+  "name": "Minimal RBAC Implementation Plan",
+  "summary": "Implement minimal roles/permissions with tenant scoping and a single authorization gate.",
+  "assumptions": [
+    "FastAPI backend under `backend/`; SQL via existing DB layer.",
+    "We add an authorization helper and seed built-in roles/permissions."
+  ],
+  "feature_flags": [
+    {"key": "enable_custom_roles", "default": false, "description": "Allow tenants to create custom roles in the future without schema change."}
+  ],
+  "steps": [
+    {
+      "id": "rbac:init:tables",
+      "title": "Add RBAC tables",
+      "depends_on": [],
+      "touches_files": ["backend/db/alembic/versions/*", "backend/models/*"],
+      "actions": [
+        {"description": "Create tables roles, permissions, role_permissions, user_roles (tenant_id nullable for platform scope)."},
+        {"description": "Add uniqueness constraints and built_in flags; do not migrate data yet."}
+      ],
+      "commands": ["make lint-check || true"],
+      "validations": ["lint passes"]
+    },
+    {
+      "id": "rbac:init:seed",
+      "title": "Seed built-in roles and permissions",
+      "depends_on": ["rbac:init:tables"],
+      "touches_files": ["backend/scripts/seed_db.py", "backend/scripts/seed_tenants_complete.sql"],
+      "actions": [{"description": "Insert SuperAdmin, TenantOwner, TenantAdmin, Member and the five permission slugs."}],
+      "commands": ["pytest -q -k rbac --maxfail=1 || true"],
+      "validations": ["seed is idempotent"]
+    },
+    {
+      "id": "rbac:authz:helper",
+      "title": "Implement authorize(user, perm, tenant_id)",
+      "depends_on": ["rbac:init:seed"],
+      "touches_files": ["backend/core/rbac.py", "backend/dependencies.py"],
+      "actions": [
+        {"description": "Short-circuit if user has platform:admin."},
+        {"description": "Resolve effective permissions for (user_id, tenant_id) and compare to perm."},
+        {"description": "Default deny; raise 403 with consistent error schema."}
+      ],
+      "validations": ["unit tests cover role→permission matrix"]
+    },
+    {
+      "id": "rbac:fastapi:dependency",
+      "title": "Add require_perm(permission_slug) dependency",
+      "depends_on": ["rbac:authz:helper"],
+      "touches_files": ["backend/dependencies.py", "backend/routes/**/**.py"],
+      "actions": [
+        {"description": "Provide FastAPI dependency that extracts tenant_id and asserts permission via authorize()."},
+        {"description": "Replace ad-hoc checks on protected routes."}
+      ]
+    },
+    {
+      "id": "rbac:claims",
+      "title": "Minimize token claims; resolve roles server-side",
+      "depends_on": ["rbac:authz:helper"],
+      "touches_files": ["backend/core/admin_auth.py", "backend/core/**/auth*.py"],
+      "actions": [
+        {"description": "Include is_platform_admin and {tenant_id: [role_ids]} claims; do not embed permissions."},
+        {"description": "Add short TTL cache for effective permissions with invalidation on role change."}
+      ]
+    },
+    {
+      "id": "rbac:tests",
+      "title": "Add tests for matrix and critical routes",
+      "depends_on": ["rbac:fastapi:dependency"],
+      "touches_files": ["tests/backend/test_rbac_minimal.py"],
+      "actions": [{"description": "Use rbac_test_matrix.yaml to assert allow/deny per role and action."}],
+      "commands": ["pytest -q -k rbac --maxfail=1"],
+      "validations": ["all matrix cases pass"]
+    }
+  ],
+  "artifacts": [
+    "docs/multi_tenant/user-roles/rbac_catalog.yaml",
+    "docs/multi_tenant/user-roles/rbac_test_matrix.yaml"
+  ],
+  "acceptance_criteria": [
+    "All protected endpoints use require_perm.",
+    "SuperAdmin short-circuits; tenant scoping enforced on all checks.",
+    "Tests pass for role/action matrix.",
+    "No tenant can escalate to platform scope; default deny on missing scope."
+  ]
+}

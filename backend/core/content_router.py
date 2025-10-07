@@ -7,20 +7,99 @@ This module provides focused functionality for:
 - Adaptive search strategy selection
 - Content type hint extraction
 - Metadata filter extraction from natural language queries
+
+NOTE: As of Phase 2 taxonomy refactor, this module uses database-driven taxonomy
+from tenant_taxonomy table instead of file-based taxonomy_loader.
 """
 
 import logging
 import re
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from langchain.docstore.document import Document
 
 from ..models.filter_models import MetadataFilter, RetrievalFilters
 from .config_v2 import AppConfig
 from .semantic_searcher import SemanticSearcher
-from .taxonomy_loader import get_topic_taxonomy
 
 logger = logging.getLogger(__name__)
+
+
+def get_tenant_taxonomy(tenant_id: str) -> Dict[str, Dict]:
+    """
+    Load taxonomy from tenant_taxonomy table (unified source).
+
+    Replaces legacy taxonomy_loader.get_topic_taxonomy() with database query.
+    This is the new unified approach for Phase 2+ taxonomy refactor.
+
+    Args:
+        tenant_id: Tenant UUID
+
+    Returns:
+        Dictionary mapping category keys to {label, synonyms, regex} data.
+        Returns empty dict if database is unavailable or query fails.
+
+    Example return value:
+        {
+            "documentation": {
+                "label": "Technical Documentation",
+                "synonyms": ["docs", "api", "reference"],
+                "regex": ["\\bdocs\\b", "\\bapi\\b"]
+            },
+            "tutorial": {
+                "label": "Tutorials & How-Tos",
+                "synonyms": ["how-to", "guide"],
+                "regex": ["\\btutorial\\b", "\\bhow-to\\b"]
+            }
+        }
+    """
+    from .db_session import get_db_session_sync
+    from sqlalchemy import text
+
+    taxonomy = {}
+
+    try:
+        with get_db_session_sync() as session:
+            if session is None:
+                # Database not available (multi-tenant disabled or connection failed)
+                logger.warning(
+                    "Database session unavailable. Cannot load taxonomy. "
+                    "Tenant should bootstrap taxonomy via POST /api/admin/taxonomy/bootstrap"
+                )
+                return {}
+
+            session.execute(text("SET LOCAL app.tenant_id = :tid"), {"tid": tenant_id})
+
+            rows = session.execute(
+                text(
+                    """
+                    SELECT key, label, synonyms, regex
+                    FROM tenant_taxonomy
+                    WHERE tenant_id = :tid AND active = true
+                    """
+                ),
+                {"tid": tenant_id},
+            ).fetchall()
+
+            for row in rows:
+                taxonomy[row[0]] = {
+                    "label": row[1],
+                    "synonyms": row[2] if row[2] else [],
+                    "regex": row[3] if row[3] else [],
+                }
+
+            if taxonomy:
+                logger.debug(f"Loaded {len(taxonomy)} taxonomy entries from database for tenant {tenant_id[:8]}...")
+            else:
+                logger.warning(
+                    f"No taxonomy found for tenant {tenant_id[:8]}. "
+                    "Bootstrap taxonomy via: POST /{tenant}/api/admin/taxonomy/bootstrap?template_key=software"
+                )
+
+    except Exception as e:
+        logger.error(f"Failed to load taxonomy for tenant {tenant_id}: {e}")
+
+    return taxonomy
 
 
 class ContentRouter:
@@ -103,12 +182,14 @@ class ContentRouter:
 
         return filters
 
-    def detect_content_types(self, query: str) -> List[str]:
+    def detect_content_types(self, query: str, tenant_id: Optional[str] = None) -> List[str]:
         """
-        Detect content types based on query patterns.
+        Detect content types based on query patterns using tenant taxonomy.
 
         Args:
             query: User query text
+            tenant_id: Optional tenant UUID. If provided, uses database taxonomy.
+                      If not provided, falls back to legacy file-based taxonomy.
 
         Returns:
             List of detected content type hints
@@ -117,9 +198,19 @@ class ContentRouter:
         hints: List[str] = []
 
         # 1) Try taxonomy-driven detection
-        taxonomy = get_topic_taxonomy()
-        if taxonomy and isinstance(taxonomy.get("categories"), dict):
-            cats = taxonomy["categories"]
+        # Use database taxonomy if tenant_id provided, otherwise legacy
+        if tenant_id:
+            taxonomy_dict = get_tenant_taxonomy(tenant_id)
+            cats = taxonomy_dict  # Already in {key: {label, synonyms, regex}} format
+        else:
+            # Legacy fallback
+            legacy_taxonomy = get_topic_taxonomy()
+            if legacy_taxonomy and isinstance(legacy_taxonomy.get("categories"), dict):
+                cats = legacy_taxonomy["categories"]
+            else:
+                cats = None
+
+        if cats:
 
             for cat_name, cfg in cats.items():
                 matched = False

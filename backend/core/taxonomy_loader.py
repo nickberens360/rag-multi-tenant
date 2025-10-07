@@ -1,3 +1,25 @@
+"""
+⚠️⚠️⚠️ FULLY DEPRECATED - DO NOT USE ⚠️⚠️⚠️
+
+This module has been COMPLETELY REMOVED as of Phase 4 (Cleanup & Consolidation) on 2025-10-05.
+All functions in this module will raise DeprecationWarning.
+
+REPLACEMENT:
+- OLD: from .taxonomy_loader import get_topic_taxonomy
+- NEW: from .content_router import get_tenant_taxonomy
+
+WHY THIS WAS REMOVED:
+1. Dual taxonomy systems created confusion (file + DB)
+2. No tenant isolation (global taxonomy shared across all tenants)
+3. Legacy code path prevented full migration to unified system
+
+MIGRATION GUIDE:
+See: docs/multi_tenant/taxonomy-refactor/04-phase4-cleanup.md
+
+If you see this module being imported anywhere, it's a BUG that should be fixed immediately.
+This file exists only to throw helpful errors and will be deleted in the next release.
+"""
+
 import json
 import logging
 from pathlib import Path
@@ -21,35 +43,22 @@ def invalidate_cache() -> None:
 
 
 def get_topic_taxonomy(force_reload: bool = False) -> Optional[Dict[str, Any]]:
-    """Load and cache the topic taxonomy configuration.
-
-    Priority:
-      1) DB value from admin_settings (key: 'taxonomy_settings') if available
-      2) Fallback to bundled file backend/core/topic_taxonomy.json
-
-    Returns None if neither source is available/valid. Callers should handle fallbacks.
     """
-    global _CACHED_TAXONOMY
-    global _CACHE_SOURCE
+    ⚠️ DEPRECATED: This function has been removed. Use content_router.get_tenant_taxonomy() instead.
 
-    if _CACHED_TAXONOMY is not None and not force_reload:
-        return _CACHED_TAXONOMY
-
-    # 1) Try database-backed taxonomy first when available
-    try:
-        settings_mgr = get_settings_manager()
-        json_str = settings_mgr._get_setting_from_db("taxonomy_settings")  # internal use
-        if json_str:
-            data = json.loads(json_str)
-            if isinstance(data, dict) and isinstance(data.get("categories"), dict):
-                _CACHED_TAXONOMY = data
-                _CACHE_SOURCE = "db"
-                logger.info("Topic taxonomy loaded from DB (admin_settings)")
-                return _CACHED_TAXONOMY
-            else:
-                logger.warning("Invalid taxonomy format from DB; expected top-level 'categories' object")
-    except Exception as e:
-        logger.warning(f"Failed to load taxonomy from DB: {e}")
+    This function will raise DeprecationWarning to help identify legacy code paths.
+    """
+    logger.error(
+        "⚠️ DEPRECATED FUNCTION CALLED: taxonomy_loader.get_topic_taxonomy() ⚠️\n"
+        "This function has been removed as of Phase 4 (2025-10-05).\n"
+        "REPLACE WITH: from backend.core.content_router import get_tenant_taxonomy\n"
+        "See migration guide: docs/multi_tenant/taxonomy-refactor/04-phase4-cleanup.md"
+    )
+    raise DeprecationWarning(
+        "taxonomy_loader.get_topic_taxonomy() is deprecated. "
+        "Use content_router.get_tenant_taxonomy(tenant_id) instead. "
+        "See: docs/multi_tenant/taxonomy-refactor/04-phase4-cleanup.md"
+    )
 
     # 2) Fallback to file
     try:

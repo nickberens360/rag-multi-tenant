@@ -62,12 +62,6 @@ const navigationTabs = [
     description: 'Indexing & synchronization settings'
   },
   {
-    value: 'search-taxonomy',
-    title: 'Search & Taxonomy',
-    icon: '$tag',
-    description: 'Categories, synonyms, and regex patterns'
-  },
-  {
     value: 'response',
     title: 'Response Settings',
     icon: '$message-reply',
@@ -98,10 +92,10 @@ const currentTab = computed(() => {
   if (routeName === 'settings-core') return 'core'
   if (routeName === 'settings-search-retrieval') return 'search-retrieval'
   if (routeName === 'settings-knowledge') return 'knowledge'
-  if (routeName === 'settings-taxonomy') return 'search-taxonomy'
   if (routeName === 'settings-response') return 'response'
   if (routeName === 'settings-security') return 'security'
   if (routeName === 'settings-ux') return 'ux'
+  if (routeName === 'settings-features') return 'features'
   return 'core' // default to core settings
 })
 
@@ -110,7 +104,6 @@ const navigateToTab = (tabValue) => {
     'core': 'settings-core',
     'search-retrieval': 'settings-search-retrieval',
     'knowledge': 'settings-knowledge',
-    'search-taxonomy': 'settings-taxonomy',
     'response': 'settings-response',
     'security': 'settings-security',
     'features': 'settings-features',

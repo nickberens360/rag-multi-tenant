@@ -252,6 +252,23 @@
           Edit Source Metadata
         </v-card-title>
         <v-card-text>
+          <!-- Taxonomy Bootstrap Notice -->
+          <v-alert
+            v-if="!taxonomy || taxonomy.length === 0"
+            type="warning"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            <div class="text-caption">
+              <strong>Note:</strong> Using default taxonomy.
+              <router-link to="/knowledge/manage-taxonomy" class="text-decoration-none">
+                Bootstrap your taxonomy
+              </router-link>
+              to customize content types and tags.
+            </div>
+          </v-alert>
+
           <v-text-field
             label="Source Path"
             :model-value="selectedSource?.path"
@@ -310,7 +327,8 @@
           <v-combobox
             v-model="editedTags"
             label="Tags"
-            :items="availableTags"
+            :items="tagSuggestions"
+            :loading="loadingTagSuggestions"
             variant="outlined"
             multiple
             chips
@@ -318,7 +336,27 @@
             clearable
             hint="Add or remove tags (will override inferred tags)"
             persistent-hint
-          />
+            @update:search="fetchTagSuggestions"
+          >
+            <template #item="{ props, item }">
+              <v-list-item v-bind="props">
+                <template #prepend>
+                  <v-icon v-if="item.raw?.official">
+                    $checkCircle
+                  </v-icon>
+                </template>
+                <template #append>
+                  <v-chip
+                    v-if="item.raw?.usage_count"
+                    size="x-small"
+                    variant="outlined"
+                  >
+                    {{ item.raw.usage_count }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </template>
+          </v-combobox>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -429,7 +467,8 @@
             <v-combobox
               v-model="uploadMetadata.tags"
               label="Tags"
-              :items="availableTags"
+              :items="tagSuggestions"
+              :loading="loadingTagSuggestions"
               variant="outlined"
               multiple
               chips
@@ -437,7 +476,27 @@
               clearable
               hint="Add relevant tags (select from suggestions or create new)"
               persistent-hint
-            />
+              @update:search="fetchTagSuggestions"
+            >
+              <template #item="{ props, item }">
+                <v-list-item v-bind="props">
+                  <template #prepend>
+                    <v-icon v-if="item.raw?.official">
+                      $checkCircle
+                    </v-icon>
+                  </template>
+                  <template #append>
+                    <v-chip
+                      v-if="item.raw?.usage_count"
+                      size="x-small"
+                      variant="outlined"
+                    >
+                      {{ item.raw.usage_count }}
+                    </v-chip>
+                  </template>
+                </v-list-item>
+              </template>
+            </v-combobox>
           </div>
 
           <!-- Upload Progress -->
@@ -595,6 +654,11 @@ const uploadProgress = ref({
   total: 0
 })
 
+// Tag autocomplete state
+const tagSuggestions = ref([])
+const loadingTagSuggestions = ref(false)
+let tagAutocompleteTimeout = null
+
 // Indexing progress state (post-upload background tasks)
 const indexingProgress = ref({
   active: false,
@@ -621,7 +685,18 @@ const fileRules = [
 
 // Computed properties for taxonomy-based options
 const contentTypeOptions = computed(() => {
-  if (!taxonomy.value || taxonomy.value.length === 0) return []
+  // Provide fallback content types when taxonomy is not yet bootstrapped
+  const defaultContentTypes = [
+    { key: 'technical', label: 'Technical Documentation' },
+    { key: 'experience', label: 'Experience & Projects' },
+    { key: 'creative', label: 'Creative Content' },
+    { key: 'personal', label: 'Personal Information' },
+    { key: 'brand', label: 'Brand Assets' },
+  ]
+
+  if (!taxonomy.value || taxonomy.value.length === 0) {
+    return defaultContentTypes
+  }
 
   // Filter active content types only
   return taxonomy.value
@@ -633,7 +708,17 @@ const contentTypeOptions = computed(() => {
 })
 
 const availableTags = computed(() => {
-  if (!taxonomy.value || taxonomy.value.length === 0) return []
+  // Provide fallback tags when taxonomy is not yet bootstrapped
+  const defaultTags = [
+    'technical', 'documentation', 'guide', 'reference', 'tutorial',
+    'experience', 'portfolio', 'project', 'case-study',
+    'creative', 'blog', 'article', 'content',
+    'personal', 'bio', 'about', 'resume'
+  ]
+
+  if (!taxonomy.value || taxonomy.value.length === 0) {
+    return defaultTags
+  }
 
   // Extract all tags from taxonomy (synonyms can be used as tags)
   const tags = new Set()
@@ -1040,6 +1125,46 @@ const stopIndexingPoll = () => {
     indexingPollTimer = null
   }
   indexingProgress.value.active = false
+}
+
+// ---- Tag autocomplete helpers ----
+const fetchTagSuggestions = async (query) => {
+  // Debounce the autocomplete requests
+  if (tagAutocompleteTimeout) {
+    clearTimeout(tagAutocompleteTimeout)
+  }
+
+  tagAutocompleteTimeout = setTimeout(async () => {
+    if (!query || query.length < 1) {
+      tagSuggestions.value = availableTags.value
+      return
+    }
+
+    try {
+      loadingTagSuggestions.value = true
+      const response = await adminAPI.getTagAutocomplete(query, 20)
+
+      // Transform suggestions to include raw data for templates
+      if (response && response.suggestions) {
+        tagSuggestions.value = response.suggestions.map(s => ({
+          title: s.tag,
+          value: s.tag,
+          raw: {
+            usage_count: s.usage_count,
+            official: s.source === 'official'
+          }
+        }))
+      } else {
+        tagSuggestions.value = []
+      }
+    } catch (error) {
+      console.error('Failed to fetch tag suggestions:', error)
+      // Fallback to taxonomy tags
+      tagSuggestions.value = availableTags.value
+    } finally {
+      loadingTagSuggestions.value = false
+    }
+  }, 300) // 300ms debounce
 }
 </script>
 

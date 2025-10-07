@@ -20,15 +20,14 @@ class FastContentClassifier:
     """Lightning-fast content classification using patterns and keywords."""
 
     def __init__(self):
-        """Initialize classifier with taxonomy-first configuration and safe fallbacks."""
+        """Initialize classifier with taxonomy-first configuration and safe fallbacks.
 
-        from .taxonomy_loader import get_topic_taxonomy
-
-        tax = get_topic_taxonomy()
-        if tax and isinstance(tax.get("categories"), dict):
-            self._init_from_taxonomy(tax)
-        else:
-            self._init_default_tables()
+        NOTE: After Phase 4 refactor, this classifier uses default patterns.
+        Tenant-specific taxonomy is loaded at query time by the content router.
+        """
+        # Phase 4 refactor: FastContentClassifier uses built-in patterns
+        # Tenant-specific taxonomy loaded at query time via content_router.get_tenant_taxonomy()
+        self._init_default_tables()
 
     def extract_content_topics_fast(self, content: str, file_path: Path) -> List[str]:
         """Extract topics from content using fast keyword matching (no LLM)."""

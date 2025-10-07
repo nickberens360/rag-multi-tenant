@@ -7,6 +7,7 @@ Provides endpoints for:
 - Document statistics and analytics
 """
 
+import json
 import logging
 import os
 import shutil
@@ -505,8 +506,8 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
                     params["content_type"] = update_data.manual_content_type
 
                 if update_data.manual_tags is not None:
-                    updates.append("manual_tags = :tags::jsonb")
-                    params["tags"] = update_data.manual_tags
+                    updates.append("manual_tags = CAST(:tags AS jsonb)")
+                    params["tags"] = json.dumps(update_data.manual_tags)
 
                 if updates:
                     updates.extend(
@@ -564,6 +565,13 @@ async def update_knowledge_source(request: Request, source_path: str, update_dat
                         user_agent=user_agent,
                         success=True,
                     )
+
+                    # Track tag usage in taxonomy (increment usage_count)
+                    if update_data.manual_tags:
+                        from ..core.tag_manager import tag_manager
+
+                        for tag in update_data.manual_tags:
+                            tag_manager.increment_tag_usage(tenant_id=str(tenant_id), tag=tag)
 
                     # Note: Reindex will happen automatically on next sync since we set status='discovered'
                     # The discovery/sync worker will pick up this file and reindex it

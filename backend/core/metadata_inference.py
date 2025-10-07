@@ -133,13 +133,13 @@ class MetadataInferenceService:
         # Load tenant taxonomy
         taxonomy = self.get_tenant_taxonomy(tenant_id)
         if not taxonomy:
-            logger.warning(f"No taxonomy found for tenant {tenant_id}, using defaults")
-            taxonomy = {
-                "technical": {"label": "Technical Documentation", "synonyms": ["docs", "documentation"]},
-                "experience": {"label": "Experience & Projects", "synonyms": ["portfolio", "work"]},
-                "creative": {"label": "Creative Content", "synonyms": ["blog", "writing"]},
-                "personal": {"label": "Personal Information", "synonyms": ["bio", "about"]},
-            }
+            logger.warning(
+                f"No taxonomy found for tenant {tenant_id}. "
+                "Tenant should bootstrap taxonomy via POST /api/admin/taxonomy/bootstrap. "
+                "Skipping metadata inference."
+            )
+            # Return empty inference instead of forcing hardcoded categories
+            return None, [], 0.0
 
         # Read file sample if not provided
         if content_sample is None:

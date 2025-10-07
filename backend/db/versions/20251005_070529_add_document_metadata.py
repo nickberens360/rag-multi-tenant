@@ -207,46 +207,55 @@ def upgrade():
         )
     )
 
-    # Insert default taxonomy entries for the default tenant
-    # These will be visible across all tenants as a starting point
-    op.execute(
-        sa.text(
-            """
-            INSERT INTO tenant_taxonomy (tenant_id, key, label, synonyms)
-            SELECT
-                id as tenant_id,
-                'technical' as key,
-                'Technical Documentation' as label,
-                '["documentation", "docs", "guide", "reference"]'::jsonb as synonyms
-            FROM tenants
-            WHERE slug = 'default'
-            UNION ALL
-            SELECT
-                id,
-                'experience',
-                'Experience & Projects',
-                '["portfolio", "work", "projects", "case-study"]'::jsonb
-            FROM tenants
-            WHERE slug = 'default'
-            UNION ALL
-            SELECT
-                id,
-                'creative',
-                'Creative Content',
-                '["blog", "writing", "article", "content"]'::jsonb
-            FROM tenants
-            WHERE slug = 'default'
-            UNION ALL
-            SELECT
-                id,
-                'personal',
-                'Personal Information',
-                '["bio", "about", "resume", "cv"]'::jsonb
-            FROM tenants
-            WHERE slug = 'default';
-            """
-        )
-    )
+    # NOTE: Taxonomy seeding removed in favor of optional template bootstrap
+    # New tenants should use POST /api/admin/taxonomy/bootstrap to populate taxonomy
+    # from industry-specific templates (software, legal, medical, marketing, or empty).
+    #
+    # Existing tenants with taxonomy already seeded are unaffected.
+    # See: docs/multi_tenant/taxonomy-refactor/02-implementation-plan.md
+
+    # LEGACY SEEDING (DISABLED):
+    # The following INSERT was removed to allow flexible tenant-specific taxonomies.
+    # If you need to re-enable for development, uncomment the block below.
+
+    # op.execute(
+    #     sa.text(
+    #         """
+    #         INSERT INTO tenant_taxonomy (tenant_id, key, label, synonyms)
+    #         SELECT
+    #             id as tenant_id,
+    #             'technical' as key,
+    #             'Technical Documentation' as label,
+    #             '["documentation", "docs", "guide", "reference"]'::jsonb as synonyms
+    #         FROM tenants
+    #         WHERE slug = 'default'
+    #         UNION ALL
+    #         SELECT
+    #             id,
+    #             'experience',
+    #             'Experience & Projects',
+    #             '["portfolio", "work", "projects", "case-study"]'::jsonb
+    #         FROM tenants
+    #         WHERE slug = 'default'
+    #         UNION ALL
+    #         SELECT
+    #             id,
+    #             'creative',
+    #             'Creative Content',
+    #             '["blog", "writing", "article", "content"]'::jsonb
+    #         FROM tenants
+    #         WHERE slug = 'default'
+    #         UNION ALL
+    #         SELECT
+    #             id,
+    #             'personal',
+    #             'Personal Information',
+    #             '["bio", "about", "resume", "cv"]'::jsonb
+    #         FROM tenants
+    #         WHERE slug = 'default';
+    #         """
+    #     )
+    # )
 
 
 def downgrade():

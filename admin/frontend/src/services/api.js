@@ -1051,6 +1051,113 @@ class AdminAPI {
     }
   }
 
+  // Tag autocomplete endpoint
+  async getTagAutocomplete(query, limit = 10) {
+    try {
+      const response = await this.client.get('/taxonomy/tags/autocomplete', {
+        params: { q: query, limit }
+      })
+      return response
+    } catch (error) {
+      console.error('Failed to get tag autocomplete:', error)
+      throw error
+    }
+  }
+
+  // Tag analytics endpoint
+  async getTagAnalytics() {
+    try {
+      const response = await this.client.get('/taxonomy/analytics')
+      return response
+    } catch (error) {
+      console.error('Failed to get tag analytics:', error)
+      throw error
+    }
+  }
+
+  // Tag promotion endpoint
+  async promoteTag(tag, metadata = {}) {
+    try {
+      const response = await this.client.post(`/taxonomy/tags/${encodeURIComponent(tag)}/promote`, metadata)
+      return response
+    } catch (error) {
+      console.error('Failed to promote tag:', error)
+      throw error
+    }
+  }
+
+  // Taxonomy CRUD endpoints
+  async createTaxonomyEntry(data) {
+    try {
+      const response = await this.client.post('/taxonomy', data)
+      return response
+    } catch (error) {
+      console.error('Failed to create taxonomy entry:', error)
+      throw error
+    }
+  }
+
+  async updateTaxonomyEntry(key, data) {
+    try {
+      const response = await this.client.put(`/taxonomy/${encodeURIComponent(key)}`, data)
+      return response
+    } catch (error) {
+      console.error('Failed to update taxonomy entry:', error)
+      throw error
+    }
+  }
+
+  async deleteTaxonomyEntry(key) {
+    try {
+      const response = await this.client.delete(`/taxonomy/${encodeURIComponent(key)}`)
+      return response
+    } catch (error) {
+      console.error('Failed to delete taxonomy entry:', error)
+      throw error
+    }
+  }
+
+  // Taxonomy bootstrap endpoint
+  async bootstrapTaxonomy(templateKey, force = false) {
+    try {
+      const response = await this.client.post('/taxonomy/bootstrap', {
+        template: templateKey,
+        force: force
+      })
+      return response
+    } catch (error) {
+      // Don't log 400 errors for "already has entries" - this is expected and handled by UI
+      const isExpectedConflict = error.response?.status === 400 &&
+                                  error.response?.data?.detail?.includes('already has')
+      if (!isExpectedConflict) {
+        console.error('Failed to bootstrap taxonomy:', error)
+      }
+      throw error
+    }
+  }
+
+  // Get available taxonomy templates
+  async getTaxonomyTemplates() {
+    try {
+      const response = await this.client.get('/taxonomy/templates')
+      return response
+    } catch (error) {
+      console.error('Failed to get taxonomy templates:', error)
+      throw error
+    }
+  }
+
+  // Detect which bootstrap template was used
+  async detectBootstrapTemplate() {
+    try {
+      const response = await this.client.get('/taxonomy/bootstrap/detect')
+      return response
+    } catch (error) {
+      console.error('Failed to detect bootstrap template:', error)
+      throw error
+    }
+  }
+
   async uploadTaxonomyFallback(file) {
     try {
       const form = new FormData()

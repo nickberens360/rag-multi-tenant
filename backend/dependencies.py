@@ -9,6 +9,8 @@ from fastapi import Depends, HTTPException, Request
 
 from .core.app_initializer_v2 import get_unified_retriever
 from .core.smart_query_handler import SmartQueryHandler
+from .core.rbac import authorize
+from .core.admin_auth import require_admin_auth
 
 
 def get_app_state(request: Request):
@@ -76,3 +78,17 @@ def get_tenant_context(request: Request) -> dict:
         "tenant_id": getattr(request.state, "tenant_id", None),
         "tenant_slug": getattr(request.state, "tenant_slug", None),
     }
+
+
+def require_perm(permission: str):
+    """FastAPI dependency factory to enforce a permission within tenant scope.
+
+    Usage:
+        @router.post("/x", dependencies=[Depends(require_perm("data:write"))])
+    """
+
+    def _dep(request: Request, session=Depends(require_admin_auth), ctx: dict = Depends(get_tenant_context)) -> None:
+        tenant_id = ctx.get("tenant_id")
+        authorize(session, permission, tenant_id)
+
+    return _dep

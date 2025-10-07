@@ -44,6 +44,8 @@ defineEmits(['refresh', 'reindex'])
 <style scoped>
 .page-header {
   background: transparent;
+  padding: 0 32px 32px 32px;
+  margin-bottom: 32px;
 }
 .page-title { color: rgb(var(--v-theme-on-surface)); }
 .gap-2 { gap: 8px; }

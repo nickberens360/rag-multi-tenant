@@ -44,6 +44,9 @@ const router = useRouter()
 const navigationTabs = [
   { value: 'sources', title: 'Sources', icon: '$folder', description: 'Source files and usage' },
   { value: 'documents', title: 'Documents', icon: '$description', description: 'Indexed chunks' },
+  { value: 'analytics', title: 'Analytics', icon: '$chart-bar', description: 'Tag usage and analytics' },
+  { value: 'manage-taxonomy', title: 'Manage Taxonomy', icon: '$tag', description: 'Categories and vocabulary' },
+  { value: 'bootstrap', title: 'Bootstrap', icon: '$rocket-launch', description: 'Template-based setup' }
   // { value: 'consistency', title: 'Consistency', icon: '$shield-check', description: 'Validate & reconcile' },
   // { value: 'gaps', title: 'Content Gaps', icon: '$warning', description: 'Missing topics and patterns' },
   // { value: 'stats', title: 'Statistics', icon: '$chart', description: 'Knowledge analytics' }
@@ -53,6 +56,9 @@ const currentTab = computed(() => {
   const name = route.name
   if (name === 'knowledge-sources') return 'sources'
   if (name === 'knowledge-documents') return 'documents'
+  if (name === 'knowledge-analytics') return 'analytics'
+  if (name === 'knowledge-manage-taxonomy') return 'manage-taxonomy'
+  if (name === 'knowledge-bootstrap') return 'bootstrap'
   if (name === 'knowledge-consistency') return 'consistency'
   if (name === 'knowledge-gaps') return 'gaps'
   if (name === 'knowledge-stats') return 'stats'
@@ -63,6 +69,9 @@ const navigateToTab = (tabValue) => {
   const map = {
     sources: 'knowledge-sources',
     documents: 'knowledge-documents',
+    analytics: 'knowledge-analytics',
+    'manage-taxonomy': 'knowledge-manage-taxonomy',
+    bootstrap: 'knowledge-bootstrap',
     consistency: 'knowledge-consistency',
     gaps: 'knowledge-gaps',
     stats: 'knowledge-stats'

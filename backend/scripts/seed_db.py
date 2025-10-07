@@ -91,6 +91,95 @@ def main() -> int:
                 {"tid": default_tid, "uid": admin_id},
             )
 
+        # Seed minimal RBAC permissions
+        perms = [
+            ("platform:admin", "Platform-wide superuser; short-circuit authorization"),
+            ("tenant:manage", "Manage tenant lifecycle, billing, destructive ops"),
+            ("user:manage", "Invite/remove users, assign roles within tenant"),
+            ("data:read", "Read/search/use tenant data"),
+            ("data:write", "Modify/ingest/configure tenant data"),
+        ]
+        for slug, desc in perms:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO permissions (slug, description, created_at)
+                    VALUES (:slug, :desc, NOW())
+                    ON CONFLICT (slug) DO NOTHING
+                    """
+                ),
+                {"slug": slug, "desc": desc},
+            )
+
+        # Seed minimal RBAC roles (global definitions; tenant_id NULL for built-ins)
+        roles = [
+            ("SuperAdmin", "platform", None, True),
+            ("TenantOwner", "tenant", None, True),
+            ("TenantAdmin", "tenant", None, True),
+            ("Member", "tenant", None, True),
+        ]
+        for name, scope, tid, built_in in roles:
+            existing = conn.execute(
+                text("SELECT id FROM roles WHERE name = :name AND tenant_id IS NULL"),
+                {"name": name},
+            ).first()
+            if not existing:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO roles (name, scope, tenant_id, built_in, created_at, updated_at)
+                        VALUES (:name, :scope, :tid, :built_in, NOW(), NOW())
+                        """
+                    ),
+                    {"name": name, "scope": scope, "tid": tid, "built_in": built_in},
+                )
+
+        # Ensure platform-level unique for roles with tenant_id NULL
+        # (if role already exists, fetch its id; otherwise inserted above)
+        rows = conn.execute(text("SELECT id, name FROM roles WHERE tenant_id IS NULL")).fetchall()
+        role_ids = {row[1]: int(row[0]) for row in rows}
+
+        # Map role -> permissions
+        def role_perm(role_name: str, perm_slugs: list[str]):
+            rid = role_ids.get(role_name)
+            if not rid:
+                return
+            for slug in perm_slugs:
+                pid_row = conn.execute(text("SELECT id FROM permissions WHERE slug = :s"), {"s": slug}).first()
+                if not pid_row:
+                    continue
+                pid = int(pid_row[0])
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO role_permissions (role_id, permission_id)
+                        VALUES (:rid, :pid)
+                        ON CONFLICT DO NOTHING
+                        """
+                    ),
+                    {"rid": rid, "pid": pid},
+                )
+
+        role_perm("SuperAdmin", ["platform:admin"])  # short-circuit role
+        role_perm("TenantOwner", ["tenant:manage", "user:manage", "data:read", "data:write"])
+        role_perm("TenantAdmin", ["user:manage", "data:read", "data:write"])
+        role_perm("Member", ["data:read", "data:write"])
+
+        # Assign SuperAdmin to seeded admin user (platform scope)
+        if admin_row:
+            superadmin_id = role_ids.get("SuperAdmin")
+            if superadmin_id:
+                conn.execute(
+                    text(
+                        """
+                        INSERT INTO user_roles (user_id, role_id, tenant_id, assigned_at)
+                        VALUES (:uid, :rid, NULL, NOW())
+                        ON CONFLICT DO NOTHING
+                        """
+                    ),
+                    {"uid": admin_id, "rid": superadmin_id},
+                )
+
     print("Seed complete: default tenant and admin user ensured.")
     return 0
 

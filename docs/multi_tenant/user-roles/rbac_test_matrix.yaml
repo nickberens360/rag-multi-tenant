@@ -1,0 +1,57 @@
+version: 1
+updated_at: 2025-10-07
+description: Expected allow/deny outcomes for minimal RBAC.
+
+roles:
+  - SuperAdmin
+  - TenantOwner
+  - TenantAdmin
+  - Member
+
+actions:
+  - id: A1
+    permission: platform:admin
+    context: platform
+  - id: A2
+    permission: tenant:manage
+    context: tenant
+  - id: A3
+    permission: user:manage
+    context: tenant
+  - id: A4
+    permission: data:read
+    context: tenant
+  - id: A5
+    permission: data:write
+    context: tenant
+
+matrix:
+  # Format: [role, action_id, expected]
+  - [SuperAdmin, A1, allow]
+  - [SuperAdmin, A2, allow]
+  - [SuperAdmin, A3, allow]
+  - [SuperAdmin, A4, allow]
+  - [SuperAdmin, A5, allow]
+
+  - [TenantOwner, A1, deny]
+  - [TenantOwner, A2, allow]
+  - [TenantOwner, A3, allow]
+  - [TenantOwner, A4, allow]
+  - [TenantOwner, A5, allow]
+
+  - [TenantAdmin, A1, deny]
+  - [TenantAdmin, A2, deny]
+  - [TenantAdmin, A3, allow]
+  - [TenantAdmin, A4, allow]
+  - [TenantAdmin, A5, allow]
+
+  - [Member, A1, deny]
+  - [Member, A2, deny]
+  - [Member, A3, deny]
+  - [Member, A4, allow]
+  - [Member, A5, allow]
+
+notes:
+  - All tenant-context actions require a valid tenant_id; missing tenant_id → deny.
+  - Cross-tenant access is always denied, irrespective of role, except SuperAdmin via platform actions.
+

@@ -10,7 +10,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "backend:build": "./scripts/copy-content-to-knowledge.sh && podman build -t rag-multi-tenant:latest -f Dockerfile .",
-    "backend:dev": "podman run --rm --name rag-backend --network rag-multi-tenant-network -p 8001:8000 -v $(pwd)/backend:/app/backend:Z -v $(pwd)/backend/logs:/data:Z -v $(pwd)/public:/app/public:Z -v $(pwd)/admin:/app/admin:Z -e WATCHFILES_FORCE_POLLING=true --env-file .env rag-multi-tenant:latest uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/backend",
+    "backend:dev": "podman run --rm --name rag-backend --network rag-multi-tenant-network -p 8001:8000 -v $(pwd)/backend:/app/backend:Z -v $(pwd)/backend/logs:/data:Z -v $(pwd)/public:/app/public:Z -v $(pwd)/admin:/app/admin:Z --env-file .env rag-multi-tenant:latest uvicorn backend.main:app --host 0.0.0.0 --port 8000",
     "backend:restart": "npm run backend:stop && npm run backend:dev",
     "backend:logs": "podman logs -f rag-backend",
     "backend:dev:reindex": "podman run --rm --name rag-backend -p 8001:8000 -v $(pwd)/backend:/app/backend:Z -v $(pwd)/backend/logs:/data:Z -v $(pwd)/public:/app/public:Z -e WATCHFILES_FORCE_POLLING=true -e FORCE_REBUILD_DATA=true --env-file .env rag-multi-tenant:latest uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/backend",

@@ -511,6 +511,17 @@ class AdminAuthManager:
         if not fast_mode:
             self.reset_user_rate_limits(username, client_ip)
 
+        # Build user object from database row
+        user = {
+            "id": int(row[0]),
+            "username": row[1],
+            "email": row[2],
+            "password_hash": row[3],
+            "role": row[4],
+            "is_active": bool(row[5]) if row[5] is not None else True,
+            "last_login_at": row[6].isoformat() if row[6] else None,
+        }
+
         # Check if user has 2FA enabled
         from .totp_service import totp_service
 
@@ -522,8 +533,6 @@ class AdminAuthManager:
             return {"user": user, "requires_2fa": True, "message": "2FA verification required"}
 
         # Log successful login with location information
-        f" - {location_validation.get('reason', 'Normal location')}"
-        "medium" if location_validation.get("is_unusual", False) else "low"
         if not fast_mode:
             audit_logger.log_login(username, client_ip, user_agent or "", success=True)
 
@@ -540,15 +549,6 @@ class AdminAuthManager:
             session_id = self.create_session(int(row[0]), ip_address, user_agent)
 
             logger.info(f"Successful authentication for user {username}")
-            user = {
-                "id": int(row[0]),
-                "username": row[1],
-                "email": row[2],
-                "password_hash": row[3],
-                "role": row[4],
-                "is_active": bool(row[5]) if row[5] is not None else True,
-                "last_login_at": row[6].isoformat() if row[6] else None,
-            }
             return {"user": user, "session_id": session_id}
 
         except Exception as e:
@@ -577,16 +577,29 @@ class AdminAuthManager:
         client_ip = ip_address or "unknown"
 
         try:
-            # Get user info (Postgres)
+            # Get user info (Postgres) - fetch all fields needed for user object
             with get_db_session_sync() as session:
                 if session is None:
                     return None
                 row = session.execute(
-                    text("SELECT id, username FROM admin_users WHERE lower(username) = :un AND is_active = true"),
+                    text(
+                        "SELECT id, username, email, password_hash, role, is_active, last_login_at FROM admin_users WHERE lower(username) = :un AND is_active = true"
+                    ),
                     {"un": username},
                 ).first()
             if not row:
                 return None
+
+            # Build user object from database row
+            user = {
+                "id": int(row[0]),
+                "username": row[1],
+                "email": row[2],
+                "password_hash": row[3],
+                "role": row[4],
+                "is_active": bool(row[5]) if row[5] is not None else True,
+                "last_login_at": row[6].isoformat() if row[6] else None,
+            }
 
             # Verify 2FA token
             from .totp_service import totp_service

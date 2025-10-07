@@ -65,6 +65,24 @@ const adminChildren = [
         name: 'knowledge-stats',
         component: () => import('@/views/knowledge/StatsView.vue'),
         meta: { title: 'Knowledge Statistics' }
+      },
+      {
+        path: 'analytics',
+        name: 'knowledge-analytics',
+        component: () => import('@/views/knowledge/TaxonomyAnalyticsView.vue'),
+        meta: { title: 'Tag Analytics' }
+      },
+      {
+        path: 'manage-taxonomy',
+        name: 'knowledge-manage-taxonomy',
+        component: () => import('@/views/knowledge/ManageTaxonomyView.vue'),
+        meta: { title: 'Manage Taxonomy' }
+      },
+      {
+        path: 'bootstrap',
+        name: 'knowledge-bootstrap',
+        component: () => import('@/views/knowledge/BootstrapTaxonomyView.vue'),
+        meta: { title: 'Bootstrap Taxonomy' }
       }
     ]
   },

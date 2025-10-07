@@ -1,6 +1,85 @@
 <template>
   <div class="taxonomy-settings">
-    <v-card elevation="2">
+    <!-- Deprecation Warning Banner -->
+    <v-alert
+      type="warning"
+      variant="tonal"
+      prominent
+      border="start"
+      class="mb-6"
+    >
+      <template #prepend>
+        <v-icon size="large">$alert-circle</v-icon>
+      </template>
+
+      <v-alert-title class="text-h6 mb-2">
+        ⚠️ This Page is Deprecated
+      </v-alert-title>
+
+      <div class="text-body-1 mb-3">
+        This legacy taxonomy editor has been replaced by the new
+        <strong>Taxonomy Management</strong> system.
+      </div>
+
+      <div class="mb-3">
+        <div class="text-subtitle-2 mb-2">Why Switch?</div>
+        <v-list density="compact" class="bg-transparent">
+          <v-list-item density="compact">
+            <template #prepend>
+              <v-icon size="small" color="success">$check-circle</v-icon>
+            </template>
+            <v-list-item-title class="text-body-2">
+              Tenant-scoped taxonomies (better multi-tenant isolation)
+            </v-list-item-title>
+          </v-list-item>
+          <v-list-item density="compact">
+            <template #prepend>
+              <v-icon size="small" color="success">$check-circle</v-icon>
+            </template>
+            <v-list-item-title class="text-body-2">
+              Tag analytics and governance tools
+            </v-list-item-title>
+          </v-list-item>
+          <v-list-item density="compact">
+            <template #prepend>
+              <v-icon size="small" color="success">$check-circle</v-icon>
+            </template>
+            <v-list-item-title class="text-body-2">
+              Unified architecture (no duplicate systems)
+            </v-list-item-title>
+          </v-list-item>
+          <v-list-item density="compact">
+            <template #prepend>
+              <v-icon size="small" color="success">$check-circle</v-icon>
+            </template>
+            <v-list-item-title class="text-body-2">
+              Bootstrap templates for industry-specific vocabularies
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </div>
+
+      <v-btn
+        color="primary"
+        variant="elevated"
+        size="large"
+        prepend-icon="$arrow-right-circle"
+        @click="navigateToNewSystem"
+      >
+        Switch to Taxonomy Management
+      </v-btn>
+
+      <v-chip
+        color="error"
+        variant="outlined"
+        size="small"
+        class="ml-3"
+      >
+        Read-Only Mode
+      </v-chip>
+    </v-alert>
+
+    <v-card elevation="2" :disabled="true" class="deprecated-content">
       <v-card-title class="d-flex align-center justify-space-between pa-6">
         <div class="text-h6 font-weight-bold">
           Search & Taxonomy
@@ -1183,6 +1262,7 @@ import {
 } from 'vue';
 import { useNotifications } from '@/composables/useNotifications';
 import { useTheme } from 'vuetify';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useTenantStore } from '@/stores/tenant';
 import * as monaco from 'monaco-editor';
@@ -1190,8 +1270,14 @@ import { adminAPI } from '@/services/api';
 
 const { showSuccess, showError } = useNotifications();
 const theme = useTheme();
+const router = useRouter();
 const tenantStore = useTenantStore();
 const { currentTenant } = storeToRefs(tenantStore);
+
+// Navigate to new Taxonomy Management system
+function navigateToNewSystem() {
+  router.push({ name: 'settings-taxonomy-management' });
+}
 
 const error = ref('');
 // Success validation messages are shown via global toasts
@@ -2119,6 +2205,13 @@ async function saveSnapshot() {
 <style scoped>
 .taxonomy-settings {
   max-width: 1200px;
+}
+
+/* Deprecated content styling */
+.deprecated-content {
+  opacity: 0.6;
+  pointer-events: none;
+  filter: grayscale(40%);
 }
 
 .preview-item {

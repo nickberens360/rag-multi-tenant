@@ -43,11 +43,14 @@ import {
   // Theme & System
   mdiWeatherNight, mdiWhiteBalanceSunny, mdiMemory, mdiChartBar,
   mdiLightbulbOutline, mdiLightbulb, mdiTableLarge, mdiTestTube,
-  
+
   // New RAG Settings Icons
   mdiDeveloperBoard,
   // Auto-generate
-  mdiAutoFix
+  mdiAutoFix,
+
+  // Phase 4 Taxonomy Management Icons
+  mdiChartTimelineVariant, mdiRocketLaunch, mdiArrowRightCircle, mdiDatabaseOff
 } from '@mdi/js'
 
 // Import Vuetify styles
@@ -270,7 +273,15 @@ const iconAliases = {
   'shield': mdiShield,
   'preview': mdiEyeOutline,
   // Auto-generate taxonomy
-  'auto-generate': mdiAutoFix
+  'auto-generate': mdiAutoFix,
+
+  // Phase 4 Taxonomy Management Icons
+  'chart-timeline-variant': mdiChartTimelineVariant,
+  'chart-bar': mdiChartBar,
+  'rocket-launch': mdiRocketLaunch,
+  'arrow-right-circle': mdiArrowRightCircle,
+  'file-document': mdiFileDocument,
+  'database-off': mdiDatabaseOff
 }
 
 export default createVuetify({

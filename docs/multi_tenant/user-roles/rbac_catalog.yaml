@@ -1,0 +1,76 @@
+version: 1
+updated_at: 2025-10-07
+description: Minimal, scalable RBAC catalog for multi-tenant SaaS.
+
+permissions:
+  - id: perm.platform_admin
+    slug: platform:admin
+    scope: platform
+    description: Platform-wide superuser; short-circuit authorization.
+
+  - id: perm.tenant_manage
+    slug: tenant:manage
+    scope: tenant
+    description: Manage tenant lifecycle (billing, destructive operations, settings).
+
+  - id: perm.user_manage
+    slug: user:manage
+    scope: tenant
+    description: Invite/remove users, assign roles within tenant.
+
+  - id: perm.data_read
+    slug: data:read
+    scope: tenant
+    description: Read/search/use tenant data.
+
+  - id: perm.data_write
+    slug: data:write
+    scope: tenant
+    description: Modify/ingest/configure tenant data.
+
+roles:
+  # Platform role
+  - id: role.super_admin
+    name: SuperAdmin
+    scope: platform
+    built_in: true
+    description: Platform-wide administration. Implies allow-all via platform:admin.
+    permissions:
+      - platform:admin
+
+  # Tenant roles
+  - id: role.tenant_owner
+    name: TenantOwner
+    scope: tenant
+    built_in: true
+    description: Ultimate authority within a tenant.
+    permissions:
+      - tenant:manage
+      - user:manage
+      - data:read
+      - data:write
+
+  - id: role.tenant_admin
+    name: TenantAdmin
+    scope: tenant
+    built_in: true
+    description: Day-to-day administration within a tenant.
+    permissions:
+      - user:manage
+      - data:read
+      - data:write
+
+  - id: role.member
+    name: Member
+    scope: tenant
+    built_in: true
+    description: Default tenant user; can read and write data.
+    permissions:
+      - data:read
+      - data:write
+
+notes:
+  - SuperAdmin is a logical short-circuit; do not expand permissions list for it.
+  - Viewer (read-only) is intentionally omitted for v1. Add later without schema change.
+  - Custom roles can be enabled via feature flag without altering this catalog format.
+
